@@ -34,6 +34,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The manager of extensions installed as another apk which extend the available sources. It handles
@@ -53,7 +54,7 @@ class ExtensionManager(
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
-    private val _loadingProgress = MutableStateFlow<Float?>(null)
+    private val _loadingProgress = MutableStateFlow<Float?>(0f)
     val loadingProgress: StateFlow<Float?> = _loadingProgress.asStateFlow()
 
     /**
@@ -125,10 +126,22 @@ class ExtensionManager(
      */
     private suspend fun initExtensions() {
         try {
+            val lastReportedProgress = AtomicInteger(-5)
             val extensions = ExtensionLoader.loadExtensions(
                 context = context,
                 onProgress = { loaded, total ->
-                    _loadingProgress.value = if (total > 0) loaded.toFloat() / total else null
+                    if (total > 0) {
+                        val progressPercent = loaded * 100 / total
+                        val previousProgress = lastReportedProgress.get()
+                        if (loaded == 0 || loaded == total || progressPercent - previousProgress >= 5) {
+                            if (loaded == 0 ||
+                                loaded == total ||
+                                lastReportedProgress.compareAndSet(previousProgress, progressPercent)
+                            ) {
+                                _loadingProgress.value = loaded.toFloat() / total
+                            }
+                        }
+                    }
                 },
                 onResult = { result ->
                     when (result) {
