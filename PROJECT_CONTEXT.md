@@ -65,7 +65,7 @@
 - Checkpoint commit before cached sources: `3829cf77facc`.
 - Checkpoint tag: `checkpoint-before-cached-sources-2026-08-06`.
 - Current app version: `0.20.2`, `versionCode=27`.
-- Current debug identity: `app.mihon.dev`, `0.20.2-7805`, commit SHA `ac7205199405`.
+- Current debug identity: `app.mihon.dev`, `0.20.2-7808`, commit SHA `1c8b9e2c90fe`.
 - Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
 - Store local APK binaries under `apks/<version>/`; `apks/README.md` tracks their metadata and `.gitignore` keeps large binaries out of Git.
 - Use `:app:archiveDebugUniversalApk` for future versioned APK generation; it refuses to overwrite an existing filename.
