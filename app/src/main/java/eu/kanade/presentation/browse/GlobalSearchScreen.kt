@@ -14,6 +14,7 @@ import eu.kanade.presentation.browse.components.GlobalSearchErrorResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchToolbar
+import eu.kanade.presentation.browse.components.ConsolidatedSourceMenu
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.ConsolidatedSearchResult
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchItemResult
@@ -36,6 +37,7 @@ fun GlobalSearchScreen(
     searchMode: GlobalSearchMode,
     consolidatedItems: List<ConsolidatedSearchResult>,
     onChangeSearchMode: (GlobalSearchMode) -> Unit,
+    onChangeConsolidatedSource: (String, Long) -> Unit,
     onToggleResults: () -> Unit,
     getManga: @Composable (Manga) -> State<Manga>,
     onClickSource: (Source) -> Unit,
@@ -72,6 +74,7 @@ fun GlobalSearchScreen(
             onLongClickItem = onLongClickItem,
             searchMode = searchMode,
             consolidatedItems = consolidatedItems,
+            onChangeConsolidatedSource = onChangeConsolidatedSource,
         )
     }
 }
@@ -86,6 +89,7 @@ internal fun GlobalSearchContent(
     onLongClickItem: (Manga) -> Unit,
     searchMode: GlobalSearchMode = GlobalSearchMode.LEGACY,
     consolidatedItems: List<ConsolidatedSearchResult> = emptyList(),
+    onChangeConsolidatedSource: (String, Long) -> Unit = { _, _ -> },
     fromSourceId: Long? = null,
 ) {
     LazyColumn(
@@ -109,17 +113,22 @@ internal fun GlobalSearchContent(
                 item(key = "consolidated-${result.manga.source}-${result.manga.url}") {
                     val chaptersLabel = stringResource(MR.strings.chapters).lowercase()
                     GlobalSearchResultItem(
-                        title = result.source.name,
-                        subtitle = buildString {
-                            append(LocaleHelper.getLocalizedDisplayName(result.source.lang))
-                            if (result.chapterCount > 0) {
-                                append(" · ")
-                                append(result.chapterCount)
-                                append(' ')
-                                append(chaptersLabel)
-                            }
+                        title = result.manga.title,
+                        subtitle = if (result.chapterCount > 0) {
+                            "${result.chapterCount} $chaptersLabel"
+                        } else {
+                            ""
                         },
                         onClick = { onClickItem(result.manga) },
+                        action = {
+                            ConsolidatedSourceMenu(
+                                candidates = result.candidates,
+                                selectedSourceId = result.source.id,
+                                onSelectSource = { sourceId ->
+                                    onChangeConsolidatedSource(result.key, sourceId)
+                                },
+                            )
+                        },
                         modifier = Modifier.animateItem(),
                     ) {
                         GlobalSearchCardRow(

@@ -71,6 +71,7 @@ class GlobalSearchScreen(
                 searchMode = state.searchMode,
                 consolidatedItems = state.consolidatedItems,
                 onChangeSearchMode = screenModel::setSearchMode,
+                onChangeConsolidatedSource = screenModel::setConsolidatedSource,
                 onToggleResults = screenModel::toggleFilterResults,
                 onClickSource = {
                     navigator.push(BrowseSourceScreen(it.id, state.searchQuery))

@@ -765,6 +765,7 @@
     <string name="search_mode">Modo de pesquisa</string>
     <string name="search_mode_consolidated">Pesquisa consolidada</string>
     <string name="search_mode_legacy">Pesquisa legada</string>
+    <string name="change_source">Mudar fonte</string>
     <string name="manga_interval_expected_update_soon">Em breve</string>
     <string name="relative_time_span_never">Nunca</string>
     <string name="upcoming_guide">Guia de próximos lançamentos</string>

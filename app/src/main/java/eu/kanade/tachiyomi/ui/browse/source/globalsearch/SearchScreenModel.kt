@@ -60,11 +60,10 @@ abstract class SearchScreenModel(
 
     open val sortComparator = { map: Map<Source, SearchItemResult> ->
         if (state.value.searchMode == GlobalSearchMode.LEGACY) {
-            compareBy<Source>(
-                { (map[it] as? SearchItemResult.Success)?.isEmpty ?: true },
-                { "${it.id}" !in pinnedSources },
-                { "${it.name.lowercase()} (${it.lang})" },
-            )
+            compareByDescending<Source> { (map[it] as? SearchItemResult.Success)?.chapterCount ?: -1 }
+                .thenBy { (map[it] as? SearchItemResult.Success)?.isEmpty ?: true }
+                .thenBy { "${it.id}" !in pinnedSources }
+                .thenBy { "${it.name.lowercase()} (${it.lang})" }
         } else {
             compareByDescending<Source> { (map[it] as? SearchItemResult.Success)?.chapterCount ?: -1 }
                 .thenBy { "${it.id}" !in pinnedSources }
@@ -195,11 +194,7 @@ abstract class SearchScreenModel(
                             .let { networkToLocalManga(it) }
 
                         val searchMatch = titles.bestSearchMatch(query)
-                        val chapterCount = if (state.value.searchMode == GlobalSearchMode.CONSOLIDATED) {
-                            searchMatch?.let { getChapterCount(source, it.manga) } ?: 0
-                        } else {
-                            0
-                        }
+                        val chapterCount = searchMatch?.let { getChapterCount(source, it.manga) } ?: 0
 
                         if (isActive) {
                             updateItem(source, SearchItemResult.Success(titles, chapterCount))
@@ -247,7 +242,7 @@ abstract class SearchScreenModel(
         chapterCount: Int,
         matchScore: Double,
     ) {
-        val candidate = ConsolidatedSearchResult(
+        val candidate = ConsolidatedSearchCandidate(
             manga = manga,
             source = source,
             chapterCount = chapterCount,
@@ -260,27 +255,53 @@ abstract class SearchScreenModel(
             }
 
             val consolidatedItems = if (matchingIndex == -1) {
-                current.consolidatedItems + candidate
+                current.consolidatedItems + ConsolidatedSearchResult(
+                    key = normalizeTitle(candidate.manga.title),
+                    selected = candidate,
+                    candidates = listOf(candidate),
+                )
             } else {
-                val currentResult = current.consolidatedItems[matchingIndex]
-                if (candidate.isBetterThan(currentResult)) {
-                    current.consolidatedItems.toMutableList().apply {
-                        set(matchingIndex, candidate)
-                    }
-                } else {
-                    current.consolidatedItems
+                current.consolidatedItems.toMutableList().apply {
+                    val currentResult = this[matchingIndex]
+                    val candidates = currentResult.candidates + candidate
+                    val selected = candidates.maxWithOrNull(
+                        compareByDescending<ConsolidatedSearchCandidate> { it.chapterCount }
+                            .thenByDescending { it.matchScore },
+                    ) ?: currentResult.selected
+                    set(
+                        matchingIndex,
+                        currentResult.copy(
+                            selected = selected,
+                            candidates = candidates,
+                        ),
+                    )
                 }
             }
 
             current.copy(
-                consolidatedItems = consolidatedItems.sortedWith(
-                    compareByDescending<ConsolidatedSearchResult> { it.chapterCount }
-                        .thenByDescending { it.matchScore }
-                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.manga.title },
-                ),
+                consolidatedItems = sortConsolidatedItems(consolidatedItems),
             )
         }
     }
+
+    fun setConsolidatedSource(workKey: String, sourceId: Long) {
+        mutableState.update { current ->
+            val items = current.consolidatedItems.map { result ->
+                if (result.key != workKey) return@map result
+                result.candidates
+                    .firstOrNull { it.source.id == sourceId }
+                    ?.let { result.copy(selected = it) }
+                    ?: result
+            }
+            current.copy(consolidatedItems = sortConsolidatedItems(items))
+        }
+    }
+
+    private fun sortConsolidatedItems(items: List<ConsolidatedSearchResult>) = items.sortedWith(
+        compareByDescending<ConsolidatedSearchResult> { it.chapterCount }
+            .thenByDescending { it.matchScore }
+            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.manga.title },
+    )
 
     private fun List<Manga>.bestSearchMatch(query: String): SearchMatch? {
         if (isEmpty()) return null
@@ -393,12 +414,23 @@ sealed interface SearchItemResult {
 }
 
 data class ConsolidatedSearchResult(
+    val key: String,
+    val selected: ConsolidatedSearchCandidate,
+    val candidates: List<ConsolidatedSearchCandidate>,
+) {
+    val manga: Manga get() = selected.manga
+    val source: Source get() = selected.source
+    val chapterCount: Int get() = selected.chapterCount
+    val matchScore: Double get() = selected.matchScore
+}
+
+data class ConsolidatedSearchCandidate(
     val manga: Manga,
     val source: Source,
     val chapterCount: Int,
     val matchScore: Double,
 ) {
-    fun isBetterThan(other: ConsolidatedSearchResult): Boolean {
+    fun isBetterThan(other: ConsolidatedSearchCandidate): Boolean {
         return chapterCount > other.chapterCount ||
             (chapterCount == other.chapterCount && matchScore > other.matchScore)
     }

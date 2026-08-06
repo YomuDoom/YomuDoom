@@ -718,6 +718,7 @@
     <string name="search_mode">Modo de busca</string>
     <string name="search_mode_consolidated">Busca consolidada</string>
     <string name="search_mode_legacy">Busca legada</string>
+    <string name="change_source">Trocar fonte</string>
     <string name="syncing_library">Sincronizando a biblioteca</string>
     <string name="library_sync_complete">Sincronização da biblioteca finalizada</string>
     <string name="information_cloudflare_help">Toque aqui para obter ajuda com o Cloudflare</string>
