@@ -69,6 +69,7 @@ class GlobalSearchScreen(
                 getManga = { screenModel.getManga(it) },
                 onChangeSearchFilter = screenModel::setSourceFilter,
                 searchMode = state.searchMode,
+                consolidatedItems = state.consolidatedItems,
                 onChangeSearchMode = screenModel::setSearchMode,
                 onToggleResults = screenModel::toggleFilterResults,
                 onClickSource = {

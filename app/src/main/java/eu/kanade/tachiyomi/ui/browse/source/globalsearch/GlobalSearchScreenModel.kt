@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.browse.source.globalsearch
 
+import eu.kanade.domain.source.service.GlobalSearchMode
 import eu.kanade.tachiyomi.source.Source
 
 class GlobalSearchScreenModel(
@@ -20,6 +21,10 @@ class GlobalSearchScreenModel(
 
     override fun getEnabledSources(): List<Source> {
         return super.getEnabledSources()
-            .filter { state.value.sourceFilter != SourceFilter.PinnedOnly || "${it.id}" in pinnedSources }
+            .filter {
+                state.value.searchMode == GlobalSearchMode.CONSOLIDATED ||
+                    state.value.sourceFilter != SourceFilter.PinnedOnly ||
+                    "${it.id}" in pinnedSources
+            }
     }
 }

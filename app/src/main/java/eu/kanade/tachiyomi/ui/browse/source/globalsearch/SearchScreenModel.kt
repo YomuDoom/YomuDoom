@@ -135,7 +135,13 @@ abstract class SearchScreenModel(
 
         preferences.globalSearchMode.set(mode)
         lastQuery = null
-        mutableState.update { it.copy(searchMode = mode, items = emptyMap()) }
+        mutableState.update {
+            it.copy(
+                searchMode = mode,
+                items = emptyMap(),
+                consolidatedItems = emptyList(),
+            )
+        }
         if (!state.value.searchQuery.isNullOrBlank()) {
             search()
         }
@@ -188,17 +194,23 @@ abstract class SearchScreenModel(
                             .distinctBy { it.url }
                             .let { networkToLocalManga(it) }
 
+                        val searchMatch = titles.bestSearchMatch(query)
                         val chapterCount = if (state.value.searchMode == GlobalSearchMode.CONSOLIDATED) {
-                            titles
-                                .bestSearchMatch(query)
-                                ?.let { manga -> getChapterCount(source, manga) }
-                                ?: 0
+                            searchMatch?.let { getChapterCount(source, it.manga) } ?: 0
                         } else {
                             0
                         }
 
                         if (isActive) {
                             updateItem(source, SearchItemResult.Success(titles, chapterCount))
+                            if (state.value.searchMode == GlobalSearchMode.CONSOLIDATED && searchMatch != null) {
+                                updateConsolidatedItem(
+                                    source = source,
+                                    manga = searchMatch.manga,
+                                    chapterCount = chapterCount,
+                                    matchScore = searchMatch.score,
+                                )
+                            }
                         }
                     } catch (throwable: Throwable) {
                         if (throwable is CancellationException) throw throwable
@@ -217,6 +229,7 @@ abstract class SearchScreenModel(
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items)),
+                consolidatedItems = emptyList(),
             )
         }
     }
@@ -228,13 +241,65 @@ abstract class SearchScreenModel(
         }
     }
 
-    private fun List<Manga>.bestSearchMatch(query: String): Manga? {
+    private fun updateConsolidatedItem(
+        source: Source,
+        manga: Manga,
+        chapterCount: Int,
+        matchScore: Double,
+    ) {
+        val candidate = ConsolidatedSearchResult(
+            manga = manga,
+            source = source,
+            chapterCount = chapterCount,
+            matchScore = matchScore,
+        )
+
+        mutableState.update { current ->
+            val matchingIndex = current.consolidatedItems.indexOfFirst {
+                sameWork(it.manga.title, candidate.manga.title)
+            }
+
+            val consolidatedItems = if (matchingIndex == -1) {
+                current.consolidatedItems + candidate
+            } else {
+                val currentResult = current.consolidatedItems[matchingIndex]
+                if (candidate.isBetterThan(currentResult)) {
+                    current.consolidatedItems.toMutableList().apply {
+                        set(matchingIndex, candidate)
+                    }
+                } else {
+                    current.consolidatedItems
+                }
+            }
+
+            current.copy(
+                consolidatedItems = consolidatedItems.sortedWith(
+                    compareByDescending<ConsolidatedSearchResult> { it.chapterCount }
+                        .thenByDescending { it.matchScore }
+                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.manga.title },
+                ),
+            )
+        }
+    }
+
+    private fun List<Manga>.bestSearchMatch(query: String): SearchMatch? {
         if (isEmpty()) return null
 
         val normalizedQuery = normalizeTitle(query)
         return maxByOrNull { candidate ->
             normalizedLevenshtein.similarity(normalizedQuery, normalizeTitle(candidate.title))
-        } ?: firstOrNull()
+        }?.let { manga ->
+            SearchMatch(
+                manga = manga,
+                score = normalizedLevenshtein.similarity(normalizedQuery, normalizeTitle(manga.title)),
+            )
+        }
+    }
+
+    private fun sameWork(firstTitle: String, secondTitle: String): Boolean {
+        val first = normalizeTitle(firstTitle)
+        val second = normalizeTitle(secondTitle)
+        return first == second || normalizedLevenshtein.similarity(first, second) >= CONSOLIDATED_TITLE_THRESHOLD
     }
 
     private suspend fun getChapterCount(source: Source, manga: Manga): Int {
@@ -261,6 +326,11 @@ abstract class SearchScreenModel(
             .replace(Regex(" +"), " ")
     }
 
+    private data class SearchMatch(
+        val manga: Manga,
+        val score: Double,
+    )
+
     fun setMigrateDialog(currentId: Long, target: Manga) {
         screenModelScope.launchIO {
             val current = getManga.await(currentId) ?: return@launchIO
@@ -280,6 +350,7 @@ abstract class SearchScreenModel(
         val searchMode: GlobalSearchMode = GlobalSearchMode.CONSOLIDATED,
         val onlyShowHasResults: Boolean = false,
         val items: Map<Source, SearchItemResult> = mapOf(),
+        val consolidatedItems: List<ConsolidatedSearchResult> = emptyList(),
         val dialog: Dialog? = null,
     ) {
         val progress: Int = items.count { it.value !is SearchItemResult.Loading }
@@ -289,6 +360,10 @@ abstract class SearchScreenModel(
 
     sealed interface Dialog {
         data class Migrate(val target: Manga, val current: Manga) : Dialog
+    }
+
+    companion object {
+        private const val CONSOLIDATED_TITLE_THRESHOLD = 0.78
     }
 }
 
@@ -314,5 +389,17 @@ sealed interface SearchItemResult {
 
     fun isVisible(onlyShowHasResults: Boolean): Boolean {
         return !onlyShowHasResults || (this is Success && !this.isEmpty)
+    }
+}
+
+data class ConsolidatedSearchResult(
+    val manga: Manga,
+    val source: Source,
+    val chapterCount: Int,
+    val matchScore: Double,
+) {
+    fun isBetterThan(other: ConsolidatedSearchResult): Boolean {
+        return chapterCount > other.chapterCount ||
+            (chapterCount == other.chapterCount && matchScore > other.matchScore)
     }
 }
