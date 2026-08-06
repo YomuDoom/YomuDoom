@@ -6,6 +6,7 @@ APK binaries are kept locally by version and are intentionally ignored by Git. T
 
 | Version | Version code | Variant | Commit | Tag | APK |
 | --- | ---: | --- | --- | --- | --- |
+| `0.20.3` | `28` | `app.mihon.dev` / debug | `5c566c6fb77d` | `v0.20.3` | [`YomuDoom-v0.20.3-dev-7810-5c566c6fb77d-universal.apk`](0.20.3/YomuDoom-v0.20.3-dev-7810-5c566c6fb77d-universal.apk) |
 | `0.20.2` | `27` | `app.mihon.dev` / debug | `1c8b9e2c90fe` | `v0.20.2` | [`YomuDoom-v0.20.2-dev-7808-1c8b9e2c90fe-universal.apk`](0.20.2/YomuDoom-v0.20.2-dev-7808-1c8b9e2c90fe-universal.apk) |
 | `0.20.1` | `26` | `app.mihon.dev` / debug | `9b09c4c79c7b` | `v0.20.1` | [`YomuDoom-v0.20.1-dev-7803-9b09c4c79c7b-universal.apk`](0.20.1/YomuDoom-v0.20.1-dev-7803-9b09c4c79c7b-universal.apk) |
 
