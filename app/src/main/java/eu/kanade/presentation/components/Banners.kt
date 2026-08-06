@@ -5,16 +5,19 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,32 +66,46 @@ fun AppStateBanners(
     downloadedOnlyMode: Boolean,
     incognitoMode: Boolean,
     indexing: Boolean,
+    sourceLoadingProgress: Float? = null,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val mainInsets = WindowInsets.statusBars
     val mainInsetsTop = mainInsets.getTop(density)
     SubcomposeLayout(modifier = modifier) { constraints ->
-        val indexingPlaceable = subcompose(0) {
+        val sourceLoadingPlaceable = subcompose(0) {
+            AnimatedVisibility(
+                visible = sourceLoadingProgress != null,
+                enter = expandVertically(),
+                exit = shrinkVertically(),
+            ) {
+                SourceLoadingBanner(
+                    progress = sourceLoadingProgress ?: 0f,
+                    modifier = Modifier.windowInsetsPadding(mainInsets),
+                )
+            }
+        }.fastMap { it.measure(constraints) }
+        val sourceLoadingHeight = sourceLoadingPlaceable.fastMaxBy { it.height }?.height ?: 0
+
+        val indexingPlaceable = subcompose(1) {
             AnimatedVisibility(
                 visible = indexing,
                 enter = expandVertically(),
                 exit = shrinkVertically(),
             ) {
-                IndexingDownloadBanner(
-                    modifier = Modifier.windowInsetsPadding(mainInsets),
-                )
+                val top = (mainInsetsTop - sourceLoadingHeight).coerceAtLeast(0)
+                IndexingDownloadBanner(modifier = Modifier.windowInsetsPadding(WindowInsets(top = top)))
             }
         }.fastMap { it.measure(constraints) }
         val indexingHeight = indexingPlaceable.fastMaxBy { it.height }?.height ?: 0
 
-        val downloadedOnlyPlaceable = subcompose(1) {
+        val downloadedOnlyPlaceable = subcompose(2) {
             AnimatedVisibility(
                 visible = downloadedOnlyMode,
                 enter = expandVertically(),
                 exit = shrinkVertically(),
             ) {
-                val top = (mainInsetsTop - indexingHeight).coerceAtLeast(0)
+                val top = (mainInsetsTop - sourceLoadingHeight - indexingHeight).coerceAtLeast(0)
                 DownloadedOnlyModeBanner(
                     modifier = Modifier.windowInsetsPadding(WindowInsets(top = top)),
                 )
@@ -96,13 +113,13 @@ fun AppStateBanners(
         }.fastMap { it.measure(constraints) }
         val downloadedOnlyHeight = downloadedOnlyPlaceable.fastMaxBy { it.height }?.height ?: 0
 
-        val incognitoPlaceable = subcompose(2) {
+        val incognitoPlaceable = subcompose(3) {
             AnimatedVisibility(
                 visible = incognitoMode,
                 enter = expandVertically(),
                 exit = shrinkVertically(),
             ) {
-                val top = (mainInsetsTop - indexingHeight - downloadedOnlyHeight).coerceAtLeast(0)
+                val top = (mainInsetsTop - sourceLoadingHeight - indexingHeight - downloadedOnlyHeight).coerceAtLeast(0)
                 IncognitoModeBanner(
                     modifier = Modifier.windowInsetsPadding(WindowInsets(top = top)),
                 )
@@ -110,17 +127,46 @@ fun AppStateBanners(
         }.fastMap { it.measure(constraints) }
         val incognitoHeight = incognitoPlaceable.fastMaxBy { it.height }?.height ?: 0
 
-        layout(constraints.maxWidth, indexingHeight + downloadedOnlyHeight + incognitoHeight) {
-            indexingPlaceable.fastForEach {
+        layout(constraints.maxWidth, sourceLoadingHeight + indexingHeight + downloadedOnlyHeight + incognitoHeight) {
+            sourceLoadingPlaceable.fastForEach {
                 it.place(0, 0)
             }
+            indexingPlaceable.fastForEach {
+                it.place(0, sourceLoadingHeight)
+            }
             downloadedOnlyPlaceable.fastForEach {
-                it.place(0, indexingHeight)
+                it.place(0, sourceLoadingHeight + indexingHeight)
             }
             incognitoPlaceable.fastForEach {
-                it.place(0, indexingHeight + downloadedOnlyHeight)
+                it.place(0, sourceLoadingHeight + indexingHeight + downloadedOnlyHeight)
             }
         }
+    }
+}
+
+@Composable
+private fun SourceLoadingBanner(progress: Float, modifier: Modifier = Modifier) {
+    Column(
+        modifier = Modifier
+            .background(IndexingBannerBackgroundColor)
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .then(modifier),
+    ) {
+        Text(
+            text = stringResource(MR.strings.loading),
+            color = MaterialTheme.colorScheme.onSecondary,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.onSecondary,
+            trackColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.24f),
+        )
     }
 }
 

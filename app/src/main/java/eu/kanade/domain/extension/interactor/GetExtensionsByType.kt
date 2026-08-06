@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.Extension
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 
 class GetExtensionsByType(
     private val preferences: SourcePreferences,
@@ -16,11 +17,14 @@ class GetExtensionsByType(
         val showNsfwSources = preferences.showNsfwSource.get()
 
         return combine(
+            extensionManager.isInitialized,
             preferences.enabledLanguages.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, _installed, _untrusted, _available ->
+        ) { initialized, enabledLanguages, _installed, _untrusted, _available ->
+            if (!initialized) return@combine null
+
             val (updates, installed) = _installed
                 .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
@@ -52,6 +56,6 @@ class GetExtensionsByType(
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
             Extensions(updates, installed, available, untrusted)
-        }
+        }.filterNotNull()
     }
 }

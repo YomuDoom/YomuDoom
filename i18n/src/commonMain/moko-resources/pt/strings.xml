@@ -519,6 +519,18 @@
     <string name="connected_to_wifi">Só com Wi-Fi</string>
     <string name="update_72hour">A cada 3 dias</string>
     <string name="ext_update_all">Atualizar tudo</string>
+    <string name="ext_trust_all">Confiar em tudo</string>
+    <string name="ext_uninstall_all">Desinstalar tudo</string>
+    <string name="ext_install_extensions">Instalar extensões</string>
+    <string name="ext_install_recommended">Recomendado</string>
+    <string name="ext_install_all">Todas</string>
+    <string name="ext_install_select_mode">Escolha o modo de instalação</string>
+    <string name="ext_install_select_languages">Escolha os idiomas</string>
+    <string name="ext_install_all_confirm">Instalar todas as extensões?</string>
+    <string name="ext_install_all_message">Instalar muitas extensões pode deixar o app mais lento ao abrir. Continuar?</string>
+    <string name="ext_install_preview_message">Revise as fontes abaixo. Só as extensões elegíveis que ainda não estão instaladas serão instaladas.</string>
+    <string name="ext_install_all_done">Todas as extensões escolhidas já estão instaladas.</string>
+    <string name="ext_already_installed">Já instalada</string>
     <string name="ext_app_info">Informações da app</string>
     <string name="ext_installer_shizuku_unavailable_dialog">Instale e inicie o Shizuku para utilizá-lo como o instalador de extensões.</string>
     <string name="pref_verbose_logging_summary">Imprimir registos detalhados no registo de eventos do sistema (reduz o desempenho da app)</string>
@@ -584,6 +596,7 @@
     <string name="pref_reset_viewer_flags_summary">Repõe o modo de leitura e orientação de todas as séries</string>
     <string name="download_notifier_split_page_path_not_found">Não foi possível encontrar o caminho do ficheiro da página %d</string>
     <string name="multi_lang">Multi</string>
+    <string name="action_confirm">Confirmar</string>
     <string name="auto_download_while_reading">Transferência automática durante leitura</string>
     <string name="delete_category_confirmation">Deseja eliminar a categoria \"%s\"?</string>
     <string name="delete_category">Eliminar categoria</string>

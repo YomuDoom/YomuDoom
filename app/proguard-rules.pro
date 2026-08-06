@@ -24,6 +24,8 @@
 -keep,allowoptimization class eu.kanade.tachiyomi.network.OkHttpExtensionsKt { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.network.RequestsKt { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.AppInfo { public protected *; }
+-keep,allowoptimization class com.squareup.zstd.** { public protected *; }
+-dontwarn com.squareup.zstd.**
 
 -keepclassmembers class * implements java.io.Serializable {
     java.lang.Object writeReplace();

@@ -1,12 +1,15 @@
 package mihon.data.extension.repository
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import eu.kanade.tachiyomi.extension.model.Extension
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
+import mihon.data.extension.service.CuratedExtensionStoreService
 import mihon.data.extension.service.ExtensionStoreService
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.repository.ExtensionStoreRepository
@@ -17,6 +20,7 @@ import tachiyomi.data.subscribeToOne
 
 class ExtensionStoreRepositoryImpl(
     private val service: ExtensionStoreService,
+    private val curatedStoresService: CuratedExtensionStoreService,
     private val database: Database,
 ) : ExtensionStoreRepository {
     override suspend fun insert(indexUrl: String): Result<Unit> {
@@ -38,6 +42,7 @@ class ExtensionStoreRepositoryImpl(
 
     override suspend fun refreshAll() {
         try {
+            seedCuratedStoresIfNeeded()
             database.extension_storeQueries.getAll().awaitAsList().forEach { store ->
                 service.fetch(store.index_url)
                     .mapCatching {
@@ -74,6 +79,7 @@ class ExtensionStoreRepositoryImpl(
 
     override suspend fun fetchExtensions(): List<Extension.Available> {
         return try {
+            seedCuratedStoresIfNeeded()
             supervisorScope {
                 database.extension_storeQueries.getAll(::extensionStoreMapper).awaitAsList().map { store ->
                     async {
@@ -94,11 +100,14 @@ class ExtensionStoreRepositoryImpl(
     }
 
     override suspend fun getAll(): List<ExtensionStore> {
+        seedCuratedStoresIfNeeded()
         return database.extension_storeQueries.getAll(::extensionStoreMapper).awaitAsList()
     }
 
     override fun getAllAsFlow(): Flow<List<ExtensionStore>> {
-        return database.extension_storeQueries.getAll(::extensionStoreMapper).subscribeToList()
+        return database.extension_storeQueries.getAll(::extensionStoreMapper)
+            .subscribeToList()
+            .onStart { seedCuratedStoresIfNeeded() }
     }
 
     override fun getCountAsFlow(): Flow<Long> {
@@ -109,6 +118,16 @@ class ExtensionStoreRepositoryImpl(
 
     override suspend fun remove(indexUrl: String) {
         database.extension_storeQueries.delete(indexUrl)
+    }
+
+    private suspend fun seedCuratedStoresIfNeeded() {
+        if (database.extension_storeQueries.getCount().awaitAsOne() != 0L) {
+            return
+        }
+
+        curatedStoresService.load().forEach { store ->
+            upsert(store)
+        }
     }
 
     private fun extensionStoreMapper(

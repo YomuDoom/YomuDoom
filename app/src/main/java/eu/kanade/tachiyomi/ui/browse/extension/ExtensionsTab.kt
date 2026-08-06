@@ -14,10 +14,13 @@ import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.ExtensionScreen
+import eu.kanade.presentation.browse.ExtensionInstallDialog
+import eu.kanade.presentation.browse.ExtensionBulkActionDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.model.Extension
+import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
 import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
@@ -38,7 +41,29 @@ fun extensionsTab(
         titleRes = MR.strings.label_extensions,
         badgeNumber = state.updates.takeIf { it > 0 },
         searchEnabled = true,
-        actions = listOf(
+        actions = listOfNotNull(
+            if (state.updates > 0) {
+                AppBar.OverflowAction(
+                    title = stringResource(MR.strings.ext_update_all),
+                    onClick = { extensionsScreenModel.updateAllExtensions() },
+                )
+            } else null,
+            if (state.items.values.flatten().any { it.extension is Extension.Untrusted }) {
+                AppBar.OverflowAction(
+                    title = stringResource(MR.strings.ext_trust_all),
+                    onClick = { extensionsScreenModel.trustAllExtensions() },
+                )
+            } else null,
+            if (state.items.values.flatten().any { it.extension is Extension.Installed }) {
+                AppBar.OverflowAction(
+                    title = stringResource(MR.strings.ext_uninstall_all),
+                    onClick = { extensionsScreenModel.uninstallAllExtensions() },
+                )
+            } else null,
+            AppBar.OverflowAction(
+                title = stringResource(MR.strings.ext_install_extensions),
+                onClick = { extensionsScreenModel.showInstallDialog() },
+            ),
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
                 onClick = { navigator.push(ExtensionFilterScreen()) },
@@ -71,6 +96,7 @@ fun extensionsTab(
                 },
                 onClickItemCancel = extensionsScreenModel::cancelInstallUpdateExtension,
                 onClickUpdateAll = extensionsScreenModel::updateAllExtensions,
+                onClickTrustAll = extensionsScreenModel::trustAllExtensions,
                 onOpenWebView = { extension ->
                     extension.sources.getOrNull(0)?.let {
                         navigator.push(
@@ -90,6 +116,27 @@ fun extensionsTab(
                 onRefresh = extensionsScreenModel::findAvailableExtensions,
             )
 
+            state.installDialog?.let { dialog ->
+                ExtensionInstallDialog(
+                    state = dialog,
+                    onDismissRequest = extensionsScreenModel::dismissInstallDialog,
+                    onClickRecommended = { extensionsScreenModel.setInstallMode(InstallMode.Recommended) },
+                    onClickAll = { extensionsScreenModel.setInstallMode(InstallMode.All) },
+                    onToggleLanguage = extensionsScreenModel::toggleInstallLanguage,
+                    onConfirm = extensionsScreenModel::confirmInstallDialog,
+                )
+            }
+
+            state.bulkActionDialog?.let { dialog ->
+                ExtensionBulkActionDialog(
+                    state = dialog,
+                    onDismissRequest = extensionsScreenModel::dismissBulkActionDialog,
+                    onToggleItem = extensionsScreenModel::toggleBulkActionSelection,
+                    onSelectAll = extensionsScreenModel::selectAllBulkActionItems,
+                    onConfirm = extensionsScreenModel::confirmBulkActionDialog,
+                )
+            }
+
             privateExtensionToUninstall?.let { extension ->
                 ExtensionUninstallConfirmation(
                     extensionName = extension.name,
@@ -101,6 +148,7 @@ fun extensionsTab(
                     },
                 )
             }
+
         },
     )
 }

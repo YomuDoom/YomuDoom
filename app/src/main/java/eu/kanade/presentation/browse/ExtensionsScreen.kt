@@ -8,12 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Public
@@ -23,10 +27,13 @@ import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -52,6 +60,11 @@ import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.InstallStep
+import eu.kanade.tachiyomi.ui.browse.extension.InstallDialogState
+import eu.kanade.tachiyomi.ui.browse.extension.BulkActionDialogState
+import eu.kanade.tachiyomi.ui.browse.extension.BulkActionType
+import eu.kanade.tachiyomi.ui.browse.extension.BulkActionItem
+import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionUiModel
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreenModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
@@ -83,6 +96,7 @@ fun ExtensionScreen(
     onTrustExtension: (Extension.Untrusted) -> Unit,
     onOpenExtension: (Extension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
+    onClickTrustAll: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val navigator = LocalNavigator.currentOrThrow
@@ -125,6 +139,7 @@ fun ExtensionScreen(
                     onTrustExtension = onTrustExtension,
                     onOpenExtension = onOpenExtension,
                     onClickUpdateAll = onClickUpdateAll,
+                    onClickTrustAll = onClickTrustAll,
                 )
             }
         }
@@ -144,6 +159,7 @@ private fun ExtensionContent(
     onTrustExtension: (Extension.Untrusted) -> Unit,
     onOpenExtension: (Extension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
+    onClickTrustAll: () -> Unit,
 ) {
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<Extension.Untrusted?>(null) }
@@ -170,12 +186,24 @@ private fun ExtensionContent(
             ) {
                 when (header) {
                     is ExtensionUiModel.Header.Resource -> {
+                        val hasUntrusted = items.any { it.extension is Extension.Untrusted }
                         val action: @Composable RowScope.() -> Unit =
                             if (header.textRes == MR.strings.ext_updates_pending) {
                                 {
                                     Button(onClick = { onClickUpdateAll() }) {
                                         Text(
                                             text = stringResource(MR.strings.ext_update_all),
+                                            style = LocalTextStyle.current.copy(
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                            ),
+                                        )
+                                    }
+                                }
+                            } else if (header.textRes == MR.strings.ext_installed && hasUntrusted) {
+                                {
+                                    Button(onClick = { onClickTrustAll() }) {
+                                        Text(
+                                            text = stringResource(MR.strings.ext_trust_all),
                                             style = LocalTextStyle.current.copy(
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                             ),
@@ -266,6 +294,7 @@ private fun ExtensionContent(
             },
         )
     }
+
 }
 
 @Composable
@@ -546,6 +575,218 @@ private fun ExtensionTrustDialog(
         dismissButton = {
             TextButton(onClick = onClickDismiss) {
                 Text(text = stringResource(MR.strings.ext_uninstall))
+            }
+        },
+        onDismissRequest = onDismissRequest,
+    )
+}
+
+@Composable
+fun ExtensionInstallDialog(
+    state: InstallDialogState,
+    onDismissRequest: () -> Unit,
+    onClickRecommended: () -> Unit,
+    onClickAll: () -> Unit,
+    onToggleLanguage: (String) -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        title = { Text(text = stringResource(MR.strings.ext_install_extensions)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 420.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.ext_install_select_mode),
+                    fontWeight = FontWeight.Medium,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = state.mode == InstallMode.Recommended,
+                        onClick = onClickRecommended,
+                    )
+                    Text(text = stringResource(MR.strings.ext_install_recommended))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = state.mode == InstallMode.All,
+                        onClick = onClickAll,
+                    )
+                    Text(text = stringResource(MR.strings.ext_install_all))
+                }
+
+                if (state.mode == InstallMode.All) {
+                    WarningBanner(
+                        textRes = MR.strings.ext_install_all_message,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+
+                Text(
+                    text = stringResource(MR.strings.ext_install_select_languages),
+                    modifier = Modifier.padding(top = 16.dp),
+                    fontWeight = FontWeight.Medium,
+                )
+
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 240.dp),
+                ) {
+                    items(state.languages, key = { it }) { language ->
+                        val selected = language in state.selectedLanguages
+                        ListItem(
+                            modifier = Modifier.clickable { onToggleLanguage(language) },
+                            trailingContent = {
+                                if (selected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            },
+                            content = {
+                                Text(text = LocaleHelper.getSourceDisplayName(language, context))
+                            },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(MR.strings.action_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_cancel))
+            }
+        },
+        onDismissRequest = onDismissRequest,
+    )
+}
+
+@Composable
+fun ExtensionBulkActionDialog(
+    state: BulkActionDialogState,
+    onDismissRequest: () -> Unit,
+    onToggleItem: (String) -> Unit,
+    onSelectAll: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val context = LocalContext.current
+    val displayItems = if (state.action == BulkActionType.Install) {
+        state.items.sortedWith(
+            compareBy<BulkActionItem> { it.installed }
+                .thenBy { (it.extension as? Extension.Available)?.lang.orEmpty() }
+                .thenBy { it.extension.name },
+        )
+    } else {
+        state.items
+    }
+    val title = when (state.action) {
+        BulkActionType.Install -> MR.strings.ext_install_extensions
+        BulkActionType.Update -> MR.strings.ext_update_all
+        BulkActionType.Uninstall -> MR.strings.ext_uninstall_all
+        BulkActionType.Trust -> MR.strings.ext_trust_all
+    }
+
+    val confirmText = when (state.action) {
+        BulkActionType.Install -> MR.strings.ext_install
+        BulkActionType.Update -> MR.strings.ext_update_all
+        BulkActionType.Uninstall -> MR.strings.ext_uninstall
+        BulkActionType.Trust -> MR.strings.ext_trust
+    }
+    val selectAllText = if (state.selectedCount == state.eligibleCount && state.eligibleCount > 0) {
+        MR.strings.action_select_inverse
+    } else {
+        MR.strings.action_select_all
+    }
+
+    AlertDialog(
+        title = { Text(text = stringResource(title)) },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 420.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.ext_install_preview_message),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onSelectAll) {
+                        Text(text = stringResource(selectAllText))
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .heightIn(max = 280.dp),
+                ) {
+                    items(displayItems, key = { it.extension.pkgName }) { item ->
+                        ListItem(
+                            leadingContent = {
+                                Checkbox(
+                                    checked = item.selected,
+                                    onCheckedChange = if (item.eligible) { { onToggleItem(item.extension.pkgName) } } else null,
+                                )
+                            },
+                            content = {
+                                Text(text = item.extension.name)
+                            },
+                            supportingContent = {
+                                Text(text = LocaleHelper.getSourceDisplayName(item.extension.lang, context))
+                            },
+                            trailingContent = {
+                                Text(
+                                    text = when (state.action) {
+                                        BulkActionType.Install -> if (item.installed) {
+                                            stringResource(MR.strings.ext_already_installed)
+                                        } else if (item.selected) {
+                                            stringResource(MR.strings.ext_install)
+                                        } else {
+                                            stringResource(MR.strings.not_selected)
+                                        }
+                                        BulkActionType.Update -> if (item.selected) {
+                                            stringResource(MR.strings.ext_update)
+                                        } else {
+                                            stringResource(MR.strings.not_selected)
+                                        }
+                                        BulkActionType.Uninstall -> if (item.selected) {
+                                            stringResource(MR.strings.ext_uninstall)
+                                        } else {
+                                            stringResource(MR.strings.not_selected)
+                                        }
+                                        BulkActionType.Trust -> if (item.selected) {
+                                            stringResource(MR.strings.ext_trust)
+                                        } else {
+                                            stringResource(MR.strings.not_selected)
+                                        }
+                                    },
+                                    color = if (item.selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(confirmText))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_cancel))
             }
         },
         onDismissRequest = onDismissRequest,

@@ -220,7 +220,7 @@ class MigrationListScreenModel(
             val result = migratingManga.migrationScope.async {
                 val manga = getManga.await(target) ?: return@async null
                 try {
-                    val source = sourceManager.get(manga.source)!!
+                    val source = sourceManager.getOrStub(manga.source)
                     updateMangaFromRemote(source = source, manga = manga, fetchChapters = true).getOrThrow().manga
                 } catch (_: Exception) {
                     null

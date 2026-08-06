@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.browse.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
+import androidx.core.os.LocaleListCompat
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
@@ -35,7 +36,7 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class ExtensionsScreenModel(
-    preferences: SourcePreferences = Injekt.get(),
+    private val preferences: SourcePreferences = Injekt.get(),
     basePreferences: BasePreferences = Injekt.get(),
     private val extensionManager: ExtensionManager = Injekt.get(),
     private val getExtensions: GetExtensionsByType = Injekt.get(),
@@ -83,9 +84,9 @@ class ExtensionsScreenModel(
                     if (languagesWithExtensions.isNotEmpty()) {
                         putAll(languagesWithExtensions)
                     }
-                }
+                } to _untrusted.size
             }
-                .collectLatest { items ->
+                .collectLatest { (items, _) ->
                     mutableState.update { state ->
                         state.copy(
                             isLoading = false,
@@ -143,12 +144,241 @@ class ExtensionsScreenModel(
     }
 
     fun updateAllExtensions() {
+        openBulkActionDialog(BulkActionType.Update)
+    }
+
+    fun trustAllExtensions() {
+        openBulkActionDialog(BulkActionType.Trust)
+    }
+
+    fun uninstallAllExtensions() {
+        openBulkActionDialog(BulkActionType.Uninstall)
+    }
+
+    fun showInstallDialog() {
+        val available = extensionManager.availableExtensionsFlow.value
+        val languages = available
+            .mapNotNull { it.lang.takeIf(String::isNotBlank) }
+            .filterNot { it.equals("multi", ignoreCase = true) }
+            .distinct()
+            .sortedWith(LocaleHelper.comparator)
+        val systemLanguage = LocaleListCompat.getAdjustedDefault()[0]?.language ?: java.util.Locale.getDefault().language
+        val defaultSelected = languages
+            .filter { it == systemLanguage || it.startsWith("$systemLanguage-") }
+            .toSet()
+            .let { if (it.isEmpty()) languages.toSet() else it }
+
+        mutableState.update { state ->
+            state.copy(
+                installDialog = InstallDialogState(
+                    languages = languages,
+                    selectedLanguages = defaultSelected,
+                    mode = InstallMode.Recommended,
+                ),
+            )
+        }
+    }
+
+    fun dismissInstallDialog() {
+        mutableState.update { it.copy(installDialog = null) }
+    }
+
+    fun setInstallMode(mode: InstallMode) {
+        mutableState.update { state ->
+            state.copy(installDialog = state.installDialog?.copy(mode = mode))
+        }
+    }
+
+    fun toggleInstallLanguage(language: String) {
+        mutableState.update { state ->
+            val dialog = state.installDialog ?: return@update state
+            val selected = dialog.selectedLanguages.toMutableSet().apply {
+                if (!add(language)) remove(language)
+            }
+            state.copy(installDialog = dialog.copy(selectedLanguages = selected))
+        }
+    }
+
+    fun confirmInstallDialog() {
+        val dialog = state.value.installDialog ?: return
+        val previewItems = buildInstallPreviewItems(dialog)
+
+        dismissInstallDialog()
+
+        mutableState.update { state ->
+            state.copy(
+                bulkActionDialog = BulkActionDialogState(
+                    action = BulkActionType.Install,
+                    items = previewItems,
+                ),
+            )
+        }
+    }
+
+    fun dismissBulkActionDialog() {
+        mutableState.update { it.copy(bulkActionDialog = null) }
+    }
+
+    fun toggleBulkActionSelection(pkgName: String) {
+        mutableState.update { state ->
+            val dialog = state.bulkActionDialog ?: return@update state
+            val updatedItems = dialog.items.map { item ->
+                if (item.extension.pkgName == pkgName && item.eligible) {
+                    item.copy(selected = !item.selected)
+                } else {
+                    item
+                }
+            }
+            state.copy(bulkActionDialog = dialog.copy(items = updatedItems))
+        }
+    }
+
+    fun selectAllBulkActionItems() {
+        mutableState.update { state ->
+            val dialog = state.bulkActionDialog ?: return@update state
+            val selectableCount = dialog.items.count { it.eligible }
+            val selectedCount = dialog.items.count { it.eligible && it.selected }
+            val selectAll = selectedCount != selectableCount
+            val updatedItems = dialog.items.map { item ->
+                if (!item.eligible) {
+                    item
+                } else {
+                    item.copy(selected = selectAll)
+                }
+            }
+            state.copy(bulkActionDialog = dialog.copy(items = updatedItems))
+        }
+    }
+
+    fun confirmBulkActionDialog() {
+        val dialog = state.value.bulkActionDialog ?: return
+
         screenModelScope.launchIO {
-            state.value.items.values.flatten()
-                .map { it.extension }
-                .filterIsInstance<Extension.Installed>()
+            when (dialog.action) {
+                BulkActionType.Install -> {
+                    dialog.items
+                        .filter { it.eligible && it.selected }
+                        .mapNotNull { it.extension as? Extension.Available }
+                        .forEach { extension ->
+                            extensionManager.installExtension(extension).collectToInstallUpdate(extension)
+                        }
+                }
+                BulkActionType.Update -> {
+                    dialog.items
+                        .filter { it.eligible && it.selected }
+                        .mapNotNull { it.extension as? Extension.Installed }
+                        .forEach { extension ->
+                            extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
+                        }
+                }
+                BulkActionType.Uninstall -> {
+                    dialog.items
+                        .filter { it.eligible && it.selected }
+                        .map { it.extension }
+                        .forEach(extensionManager::uninstallExtension)
+                }
+                BulkActionType.Trust -> {
+                    dialog.items
+                        .filter { it.eligible && it.selected }
+                        .mapNotNull { it.extension as? Extension.Untrusted }
+                        .forEach { extension ->
+                            extensionManager.trust(extension)
+                        }
+                }
+            }
+        }
+
+        dismissBulkActionDialog()
+    }
+
+    private fun openBulkActionDialog(action: BulkActionType) {
+        val items = when (action) {
+            BulkActionType.Install -> buildInstallPreviewItems(
+                InstallDialogState(
+                    languages = emptyList(),
+                    selectedLanguages = emptySet(),
+                    mode = InstallMode.All,
+                ),
+            )
+            BulkActionType.Update -> extensionManager.installedExtensionsFlow.value
                 .filter { it.hasUpdate }
-                .forEach(::updateExtension)
+                .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
+                .map {
+                    BulkActionItem(
+                        extension = it,
+                        installed = true,
+                        eligible = true,
+                        selected = false,
+                    )
+                }
+            BulkActionType.Uninstall -> extensionManager.installedExtensionsFlow.value
+                .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
+                .map {
+                    BulkActionItem(
+                        extension = it,
+                        installed = true,
+                        eligible = true,
+                        selected = false,
+                    )
+                }
+            BulkActionType.Trust -> extensionManager.untrustedExtensionsFlow.value
+                .sortedWith(compareBy<Extension.Untrusted> { it.lang }.thenBy { it.name })
+                .map {
+                    BulkActionItem(
+                        extension = it,
+                        installed = false,
+                        eligible = true,
+                        selected = false,
+                    )
+                }
+        }
+
+        if (items.isEmpty()) return
+
+        mutableState.update { state ->
+            state.copy(
+                bulkActionDialog = BulkActionDialogState(
+                    action = action,
+                    items = items,
+                ),
+            )
+        }
+    }
+
+    private fun buildInstallPreviewItems(dialog: InstallDialogState): List<BulkActionItem> {
+        val installedPackages = extensionManager.installedExtensionsFlow.value
+            .asSequence()
+            .map { it.pkgName }
+            .toSet()
+
+        val items = extensionManager.availableExtensionsFlow.value
+            .asSequence()
+            .filter { it.lang in dialog.selectedLanguages }
+            .map { extension ->
+                val installed = extension.pkgName in installedPackages
+                BulkActionItem(
+                    extension = extension,
+                    installed = installed,
+                    eligible = !installed,
+                    selected = when (dialog.mode) {
+                        InstallMode.Recommended -> !installed && isRecommendedExtension(extension)
+                        InstallMode.All -> !installed
+                    },
+                )
+            }
+            .toList()
+
+        return if (dialog.mode == InstallMode.Recommended) {
+            items.sortedWith(
+                compareBy<BulkActionItem> { it.installed }
+                    .thenBy { (it.extension as Extension.Available).lang }
+                    .thenBy { it.extension.name },
+            )
+        } else {
+            items.sortedWith(
+                compareBy<BulkActionItem> { (it.extension as Extension.Available).lang }
+                    .thenBy { it.extension.name },
+            )
         }
     }
 
@@ -215,9 +445,129 @@ class ExtensionsScreenModel(
         val updates: Int = 0,
         val installer: BasePreferences.ExtensionInstaller? = null,
         val searchQuery: String? = null,
+        val installDialog: InstallDialogState? = null,
+        val bulkActionDialog: BulkActionDialogState? = null,
     ) {
         val isEmpty = items.isEmpty()
     }
+}
+
+@Immutable
+data class InstallDialogState(
+    val languages: List<String>,
+    val selectedLanguages: Set<String>,
+    val mode: InstallMode,
+)
+
+@Immutable
+data class InstallPreviewDialogState(
+    val items: List<InstallPreviewItem>,
+) {
+    val pendingCount: Int = items.count { !it.installed }
+}
+
+@Immutable
+data class InstallPreviewItem(
+    val extension: Extension.Available,
+    val installed: Boolean,
+    val eligible: Boolean,
+    val selected: Boolean,
+)
+
+@Immutable
+data class BulkActionDialogState(
+    val action: BulkActionType,
+    val items: List<BulkActionItem>,
+) {
+    val selectedCount: Int = items.count { it.eligible && it.selected }
+    val eligibleCount: Int = items.count { it.eligible }
+}
+
+@Immutable
+data class BulkActionItem(
+    val extension: Extension,
+    val installed: Boolean,
+    val eligible: Boolean,
+    val selected: Boolean,
+)
+
+enum class BulkActionType {
+    Install,
+    Update,
+    Uninstall,
+    Trust,
+}
+
+enum class InstallMode {
+    Recommended,
+    All,
+}
+
+private fun isRecommendedExtension(extension: Extension.Available): Boolean {
+    val normalizedName = normalizeInstallName(extension.name)
+    return normalizedName in recommendedInstallNamesByLanguage[extension.lang].orEmpty()
+}
+
+private val recommendedInstallNamesByLanguage = mapOf(
+    "en" to setOf(
+        "mangadex",
+        "mangakakalot",
+        "aqua manga",
+        "novelcool",
+        "comick",
+        "bato",
+        "mangapark",
+        "asurascans",
+        "webtoons",
+        "mangabuddy",
+        "mangafire",
+        "mangasee",
+        "mangafox",
+        "mangahere",
+        "mangakatana",
+        "manganato",
+    ),
+    "pt" to setOf(
+        "lermangas",
+        "mangalivre",
+        "mangalivreto",
+        "hq now",
+        "mangahost",
+        "randomscan",
+    ),
+    "es" to setOf(
+        "mangaplus",
+        "mangalib",
+        "manhuaplus",
+    ),
+    "ja" to setOf(
+        "comick",
+        "mangadex",
+    ),
+    "ko" to setOf(
+        "mangadex",
+        "comick",
+    ),
+    "zh" to setOf(
+        "mangadex",
+        "comick",
+        "manhuaplus",
+    ),
+    "fr" to setOf(
+        "mangadex",
+        "comick",
+    ),
+    "de" to setOf(
+        "mangadex",
+        "comick",
+    ),
+)
+
+private fun normalizeInstallName(value: String): String {
+    return value.lowercase()
+        .replace(Regex("[^\\p{L}0-9]+"), " ")
+        .trim()
+        .replace(Regex(" +"), " ")
 }
 
 typealias ItemGroups = Map<ExtensionUiModel.Header, List<ExtensionUiModel.Item>>

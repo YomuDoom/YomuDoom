@@ -65,7 +65,7 @@ data class MigrateMangaScreen(
         Scaffold(
             topBar = { scrollBehavior ->
                 AppBar(
-                    title = state.source!!.name,
+                    title = state.source?.name.orEmpty(),
                     navigateUp = {
                         if (state.selectionMode) {
                             screenModel.clearSelection()

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import mihon.domain.manga.model.toDomainManga
+import kotlinx.coroutines.CancellationException
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
@@ -63,8 +64,9 @@ abstract class BaseSourcePagingSource(
                 prevKey = null,
                 nextKey = if (mangasPage.hasNextPage) page + 1 else null,
             )
-        } catch (e: Exception) {
-            LoadResult.Error(e)
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            LoadResult.Error(throwable)
         }
     }
 

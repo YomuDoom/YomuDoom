@@ -1,6 +1,7 @@
 package mihon.feature.migration.list.search
 
 import com.aallam.similarity.NormalizedLevenshtein
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
@@ -41,23 +42,28 @@ abstract class BaseSmartSearchEngine<T>(
         val eligibleManga = supervisorScope {
             queries.map { query ->
                 async(Dispatchers.Default) {
-                    val builtQuery = if (!extraSearchParams.isNullOrBlank()) {
-                        "$query $extraSearchParams"
-                    } else {
-                        query
-                    }
-
-                    val candidates = searchAction(builtQuery)
-                    candidates
-                        .map {
-                            val distance = if (queries.size > 1 || candidates.size > 1) {
-                                calculateDistance(it)
-                            } else {
-                                1.0
-                            }
-                            SearchEntry(it, distance)
+                    try {
+                        val builtQuery = if (!extraSearchParams.isNullOrBlank()) {
+                            "$query $extraSearchParams"
+                        } else {
+                            query
                         }
-                        .filter { it.distance >= eligibleThreshold }
+
+                        val candidates = searchAction(builtQuery)
+                        candidates
+                            .map {
+                                val distance = if (queries.size > 1 || candidates.size > 1) {
+                                    calculateDistance(it)
+                                } else {
+                                    1.0
+                                }
+                                SearchEntry(it, distance)
+                            }
+                            .filter { it.distance >= eligibleThreshold }
+                    } catch (throwable: Throwable) {
+                        if (throwable is CancellationException) throw throwable
+                        emptyList()
+                    }
                 }
             }
                 .flatMap { it.await() }

@@ -422,7 +422,7 @@ class ReaderViewModel @JvmOverloads constructor(
             }
             return
         }
-        eventChannel.trySend(Event.ReloadViewerChapters)
+        eventChannel.send(Event.ReloadViewerChapters)
     }
 
     fun onViewerLoaded(viewer: Viewer?) {

@@ -15,13 +15,16 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import kotlinx.coroutines.CancellationException
+import tachiyomi.core.common.util.lang.withIOContext
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Class that handles the loading of the extensions. Supports two kinds of extensions:
@@ -117,7 +120,11 @@ internal object ExtensionLoader {
      *
      * @param context The application context.
      */
-    fun loadExtensions(context: Context): List<LoadResult> {
+    suspend fun loadExtensions(
+        context: Context,
+        onProgress: ((loaded: Int, total: Int) -> Unit)? = null,
+        onResult: ((LoadResult) -> Unit)? = null,
+    ): List<LoadResult> = withIOContext {
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -160,14 +167,37 @@ internal object ExtensionLoader {
             }
             .toList()
 
-        if (extPkgs.isEmpty()) return emptyList()
+        if (extPkgs.isEmpty()) return@withIOContext emptyList()
 
-        // Load each extension concurrently and wait for completion
-        return runBlocking {
-            val deferred = extPkgs.map {
-                async { loadExtension(context, it) }
-            }
-            deferred.awaitAll()
+        // Load each extension concurrently and report progress as packages complete.
+        coroutineScope {
+            val total = extPkgs.size
+            val completed = AtomicInteger(0)
+            onProgress?.invoke(0, total)
+
+            extPkgs.map {
+                async {
+                    try {
+                        loadExtension(context, it).also { result ->
+                            onResult?.invoke(result)
+                            when (result) {
+                                is LoadResult.Success -> logcat(LogPriority.DEBUG) {
+                                    "Extension loaded: ${result.extension.pkgName} " +
+                                        "sources=${result.extension.sources.size}"
+                                }
+                                is LoadResult.Untrusted -> logcat(LogPriority.WARN) {
+                                    "Extension not trusted: ${result.extension.pkgName}"
+                                }
+                                LoadResult.Error -> logcat(LogPriority.WARN) {
+                                    "Extension failed to load: ${it.packageInfo.packageName}"
+                                }
+                            }
+                        }
+                    } finally {
+                        onProgress?.invoke(completed.incrementAndGet(), total)
+                    }
+                }
+            }.awaitAll()
         }
     }
 
@@ -181,7 +211,7 @@ internal object ExtensionLoader {
             logcat(LogPriority.ERROR) { "Extension package is not found ($pkgName)" }
             return LoadResult.Error
         }
-        return loadExtension(context, extensionPackage)
+        return withIOContext { loadExtension(context, extensionPackage) }
     }
 
     fun getExtensionPackageInfoFromPkgName(context: Context, pkgName: String): PackageInfo? {
@@ -229,8 +259,10 @@ internal object ExtensionLoader {
     private suspend fun loadExtension(context: Context, extensionInfo: ExtensionInfo): LoadResult {
         val pkgManager = context.packageManager
         val pkgInfo = extensionInfo.packageInfo
-        val appInfo = pkgInfo.applicationInfo!!
+        val appInfo = pkgInfo.applicationInfo ?: return LoadResult.Error
         val pkgName = pkgInfo.packageName
+
+        return try {
 
         val extName = appInfo.metaData.getString(METADATA_NAME)
             ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tachiyomi: ")
@@ -278,8 +310,9 @@ internal object ExtensionLoader {
 
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($pkgName)" }
             return LoadResult.Error
         }
 
@@ -300,8 +333,9 @@ internal object ExtensionLoader {
                         is SourceFactory -> obj.createSources()
                         else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                     }
-                } catch (e: Throwable) {
-                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                } catch (throwable: Throwable) {
+                    if (throwable is CancellationException) throw throwable
+                    logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($it)" }
                     return LoadResult.Error
                 }
             }
@@ -326,7 +360,12 @@ internal object ExtensionLoader {
             icon = appInfo.loadIcon(pkgManager),
             isShared = extensionInfo.isShared,
         )
-        return LoadResult.Success(extension)
+        LoadResult.Success(extension)
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            logcat(LogPriority.ERROR, throwable) { "Extension load error: $pkgName" }
+            LoadResult.Error
+        }
     }
 
     /**

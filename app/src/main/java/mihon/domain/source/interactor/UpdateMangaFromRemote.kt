@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SManga
 import logcat.LogPriority
 import mihon.domain.source.models.RemoteMangaUpdate
+import kotlinx.coroutines.CancellationException
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
@@ -78,9 +79,10 @@ class UpdateMangaFromRemote(
             val updatedManga = mangaRepository.getMangaById(manga.id)
 
             Result.success(RemoteMangaUpdate(manga = updatedManga, newChapters = newChapters))
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e)
-            Result.failure(e)
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            logcat(LogPriority.ERROR, throwable)
+            Result.failure(throwable)
         }
     }
 

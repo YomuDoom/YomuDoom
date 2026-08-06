@@ -5,10 +5,13 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.aallam.similarity.NormalizedLevenshtein
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -28,6 +31,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Locale
 import java.util.concurrent.Executors
 
 abstract class SearchScreenModel(
@@ -41,6 +45,7 @@ abstract class SearchScreenModel(
 ) : StateScreenModel<SearchScreenModel.State>(initialState) {
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val normalizedLevenshtein = NormalizedLevenshtein()
     private var searchJob: Job? = null
 
     private val enabledLanguages = sourcePreferences.enabledLanguages.get()
@@ -53,11 +58,9 @@ abstract class SearchScreenModel(
     protected var extensionFilter: String? = null
 
     open val sortComparator = { map: Map<Source, SearchItemResult> ->
-        compareBy<Source>(
-            { (map[it] as? SearchItemResult.Success)?.isEmpty ?: true },
-            { "${it.id}" !in pinnedSources },
-            { "${it.name.lowercase()} (${it.lang})" },
-        )
+        compareByDescending<Source> { (map[it] as? SearchItemResult.Success)?.chapterCount ?: -1 }
+            .thenBy { "${it.id}" !in pinnedSources }
+            .thenBy { "${it.name.lowercase()} (${it.lang})" }
     }
 
     init {
@@ -164,12 +167,18 @@ abstract class SearchScreenModel(
                             .distinctBy { it.url }
                             .let { networkToLocalManga(it) }
 
+                        val chapterCount = titles
+                            .bestSearchMatch(query)
+                            ?.let { manga -> getChapterCount(source, manga) }
+                            ?: 0
+
                         if (isActive) {
-                            updateItem(source, SearchItemResult.Success(titles))
+                            updateItem(source, SearchItemResult.Success(titles, chapterCount))
                         }
-                    } catch (e: Exception) {
+                    } catch (throwable: Throwable) {
+                        if (throwable is CancellationException) throw throwable
                         if (isActive) {
-                            updateItem(source, SearchItemResult.Error(e))
+                            updateItem(source, SearchItemResult.Error(throwable))
                         }
                     }
                 }
@@ -188,7 +197,43 @@ abstract class SearchScreenModel(
     }
 
     private fun updateItem(source: Source, result: SearchItemResult) {
-        updateItems(state.value.items + (source to result))
+        mutableState.update { current ->
+            val items = current.items + (source to result)
+            current.copy(items = items.toSortedMap(sortComparator(items)))
+        }
+    }
+
+    private fun List<Manga>.bestSearchMatch(query: String): Manga? {
+        if (isEmpty()) return null
+
+        val normalizedQuery = normalizeTitle(query)
+        return maxByOrNull { candidate ->
+            normalizedLevenshtein.similarity(normalizedQuery, normalizeTitle(candidate.title))
+        } ?: firstOrNull()
+    }
+
+    private suspend fun getChapterCount(source: Source, manga: Manga): Int {
+        return try {
+            withContext(coroutineDispatcher) {
+                source.getMangaUpdate(
+                    manga = manga.toSManga(),
+                    chapters = emptyList(),
+                    fetchDetails = false,
+                    fetchChapters = true,
+                ).chapters.size
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            0
+        }
+    }
+
+    private fun normalizeTitle(title: String): String {
+        return title
+            .lowercase(Locale.getDefault())
+            .replace(Regex("[^\\p{L}0-9]+"), " ")
+            .trim()
+            .replace(Regex(" +"), " ")
     }
 
     fun setMigrateDialog(currentId: Long, target: Manga) {
@@ -206,7 +251,7 @@ abstract class SearchScreenModel(
     data class State(
         val from: Manga? = null,
         val searchQuery: String? = null,
-        val sourceFilter: SourceFilter = SourceFilter.PinnedOnly,
+        val sourceFilter: SourceFilter = SourceFilter.All,
         val onlyShowHasResults: Boolean = false,
         val items: Map<Source, SearchItemResult> = mapOf(),
         val dialog: Dialog? = null,
@@ -235,6 +280,7 @@ sealed interface SearchItemResult {
 
     data class Success(
         val result: List<Manga>,
+        val chapterCount: Int = 0,
     ) : SearchItemResult {
         val isEmpty: Boolean
             get() = result.isEmpty()

@@ -25,7 +25,9 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.interactor.SyncChapterProgressWithTrack
 import eu.kanade.domain.track.interactor.TrackChapter
+import android.app.Application
 import mihon.data.extension.repository.ExtensionStoreRepositoryImpl
+import mihon.data.extension.service.CuratedExtensionStoreService
 import mihon.data.extension.service.ExtensionStoreService
 import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import mihon.domain.extension.interactor.AddExtensionStore
@@ -196,7 +198,8 @@ class DomainModule : InjektModule {
         addFactory { TrustExtension(get(), get()) }
 
         addSingletonFactory { ExtensionStoreService(get(), get(), get()) }
-        addSingletonFactory<ExtensionStoreRepository> { ExtensionStoreRepositoryImpl(get(), get()) }
+        addSingletonFactory { CuratedExtensionStoreService(get<Application>(), get()) }
+        addSingletonFactory<ExtensionStoreRepository> { ExtensionStoreRepositoryImpl(get(), get(), get()) }
         addFactory { AddExtensionStore(get()) }
         addFactory { GetExtensionStoreCountAsFlow(get()) }
         addFactory { GetExtensionStores(get()) }

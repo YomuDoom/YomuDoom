@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.extension.util.ExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.util.ExtensionInstaller
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +24,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.model.StubSource
@@ -50,6 +53,9 @@ class ExtensionManager(
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
+    private val _loadingProgress = MutableStateFlow<Float?>(null)
+    val loadingProgress: StateFlow<Float?> = _loadingProgress.asStateFlow()
+
     /**
      * API where all the available extensions can be found.
      */
@@ -72,7 +78,7 @@ class ExtensionManager(
     val untrustedExtensionsFlow = untrustedExtensionMapFlow.mapExtensions(scope)
 
     init {
-        initExtensions()
+        scope.launchIO { initExtensions() }
         ExtensionInstallReceiver(InstallationListener()).register(context)
     }
 
@@ -117,18 +123,57 @@ class ExtensionManager(
     /**
      * Loads and registers the installed extensions.
      */
-    private fun initExtensions() {
-        val extensions = ExtensionLoader.loadExtensions(context)
+    private suspend fun initExtensions() {
+        try {
+            val extensions = ExtensionLoader.loadExtensions(
+                context = context,
+                onProgress = { loaded, total ->
+                    _loadingProgress.value = if (total > 0) loaded.toFloat() / total else null
+                },
+                onResult = { result ->
+                    when (result) {
+                        is LoadResult.Success -> installedExtensionMapFlow.update { current ->
+                            current + (result.extension.pkgName to result.extension)
+                        }
+                        is LoadResult.Untrusted -> untrustedExtensionMapFlow.update { current ->
+                            current + (result.extension.pkgName to result.extension)
+                        }
+                        LoadResult.Error -> Unit
+                    }
+                },
+            )
 
-        installedExtensionMapFlow.value = extensions
-            .filterIsInstance<LoadResult.Success>()
-            .associate { it.extension.pkgName to it.extension }
+            val installedExtensions = extensions
+                .filterIsInstance<LoadResult.Success>()
+                .map { it.extension }
+            val untrustedExtensions = extensions
+                .filterIsInstance<LoadResult.Untrusted>()
+                .map { it.extension }
+            val failedExtensions = extensions.size - installedExtensions.size - untrustedExtensions.size
 
-        untrustedExtensionMapFlow.value = extensions
-            .filterIsInstance<LoadResult.Untrusted>()
-            .associate { it.extension.pkgName to it.extension }
+            enableAdditionalSubLanguages(
+                installedExtensions.flatMap { extension -> extension.sources.map { source -> source.lang } },
+            )
 
-        _isInitialized.value = true
+            installedExtensionMapFlow.value = installedExtensions
+                .associateBy { it.pkgName }
+
+            untrustedExtensionMapFlow.value = extensions
+                .filterIsInstance<LoadResult.Untrusted>()
+                .associate { it.extension.pkgName to it.extension }
+
+            logcat(LogPriority.INFO) {
+                "Extension load complete: installed=${installedExtensions.size}, " +
+                    "untrusted=${untrustedExtensions.size}, failed=$failedExtensions, " +
+                    "sources=${installedExtensions.sumOf { it.sources.size }}"
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            logcat(LogPriority.ERROR, throwable) { "Failed to load extensions" }
+        } finally {
+            _loadingProgress.value = null
+            _isInitialized.value = true
+        }
     }
 
     /**
@@ -143,7 +188,9 @@ class ExtensionManager(
             return
         }
 
-        enableAdditionalSubLanguages(extensions)
+        enableAdditionalSubLanguages(
+            extensions.flatMap { extension -> extension.sources.map { source -> source.lang } },
+        )
 
         availableExtensionMapFlow.value = extensions.associateBy { it.pkgName }
         updatedInstalledExtensionsStatuses(extensions)
@@ -159,16 +206,15 @@ class ExtensionManager(
      * If the user have already changed the enabledLanguages preference value once,
      * the new languages will not be added to respect the user enabled choices.
      */
-    private fun enableAdditionalSubLanguages(extensions: List<Extension.Available>) {
-        if (subLanguagesEnabledOnFirstRun || extensions.isEmpty()) {
+    private fun enableAdditionalSubLanguages(languages: Iterable<String>) {
+        if (subLanguagesEnabledOnFirstRun) {
             return
         }
 
-        // Use the source lang as some aren't present on the extension level.
-        val availableLanguages = extensions
-            .flatMap(Extension.Available::sources)
-            .distinctBy(Extension.Available.Source::lang)
-            .map(Extension.Available.Source::lang)
+        val availableLanguages = languages.distinct()
+        if (availableLanguages.isEmpty()) {
+            return
+        }
 
         val deviceLanguage = Locale.getDefault().language
         val defaultLanguages = preferences.enabledLanguages.defaultValue()
@@ -294,6 +340,7 @@ class ExtensionManager(
      */
     private fun registerNewExtension(extension: Extension.Installed) {
         installedExtensionMapFlow.value += extension
+        enableAdditionalSubLanguages(extension.sources.map { source -> source.lang })
     }
 
     /**
@@ -304,6 +351,7 @@ class ExtensionManager(
      */
     private fun registerUpdatedExtension(extension: Extension.Installed) {
         installedExtensionMapFlow.value += extension
+        enableAdditionalSubLanguages(extension.sources.map { source -> source.lang })
     }
 
     /**

@@ -1,11 +1,10 @@
 package eu.kanade.tachiyomi.ui.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,8 +48,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import soup.compose.material.motion.animation.materialFadeThroughIn
-import soup.compose.material.motion.animation.materialFadeThroughOut
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.NavigationBar
@@ -64,9 +62,6 @@ object HomeScreen : Screen() {
     private val librarySearchEvent = Channel<String>()
     private val openTabEvent = Channel<Tab>()
     private val showBottomNavEvent = Channel<Boolean>()
-
-    @Suppress("ConstPropertyName")
-    private const val TabFadeDuration = 200
 
     @Suppress("ConstPropertyName")
     private const val TabNavigatorKey = "HomeTabs"
@@ -123,17 +118,8 @@ object HomeScreen : Screen() {
                             .padding(contentPadding)
                             .consumeWindowInsets(contentPadding),
                     ) {
-                        AnimatedContent(
-                            targetState = tabNavigator.current,
-                            transitionSpec = {
-                                materialFadeThroughIn(initialScale = 1f, durationMillis = TabFadeDuration) togetherWith
-                                    materialFadeThroughOut(durationMillis = TabFadeDuration)
-                            },
-                            label = "tabContent",
-                        ) {
-                            tabNavigator.saveableState(key = "currentTab", it) {
-                                it.Content()
-                            }
+                        tabNavigator.saveableState(key = "currentTab", tabNavigator.current) {
+                            tabNavigator.current.Content()
                         }
                     }
                 }
@@ -184,6 +170,21 @@ object HomeScreen : Screen() {
         val scope = rememberCoroutineScope()
         val selected = tabNavigator.current::class == tab::class
         NavigationBarItem(
+            modifier = Modifier.pointerInput(selected) {
+                detectTapGestures(
+                    onPress = {
+                        if (!selected) {
+                            val previousTab = tabNavigator.current
+                            tabNavigator.current = tab
+                            if (!tryAwaitRelease()) {
+                                tabNavigator.current = previousTab
+                            }
+                        } else {
+                            tryAwaitRelease()
+                        }
+                    },
+                )
+            },
             selected = selected,
             onClick = {
                 if (!selected) {
@@ -212,6 +213,21 @@ object HomeScreen : Screen() {
         val scope = rememberCoroutineScope()
         val selected = tabNavigator.current::class == tab::class
         NavigationRailItem(
+            modifier = Modifier.pointerInput(selected) {
+                detectTapGestures(
+                    onPress = {
+                        if (!selected) {
+                            val previousTab = tabNavigator.current
+                            tabNavigator.current = tab
+                            if (!tryAwaitRelease()) {
+                                tabNavigator.current = previousTab
+                            }
+                        } else {
+                            tryAwaitRelease()
+                        }
+                    },
+                )
+            },
             selected = selected,
             onClick = {
                 if (!selected) {

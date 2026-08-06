@@ -83,6 +83,7 @@ import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.extension.api.ExtensionApi
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
@@ -131,11 +132,9 @@ class MainActivity : BaseActivity() {
 
     private val downloadCache: DownloadCache by injectLazy()
     private val chapterCache: ChapterCache by injectLazy()
+    private val extensionManager: ExtensionManager by injectLazy()
 
     private val getIncognitoState: GetIncognitoState by injectLazy()
-
-    // To be checked by splash screen. If true then splash screen will be removed.
-    var ready = false
 
     private var navigator: Navigator? = null
 
@@ -165,9 +164,11 @@ class MainActivity : BaseActivity() {
             var incognito by remember { mutableStateOf(getIncognitoState.await(null)) }
             val downloadOnly by preferences.downloadedOnly.collectAsState()
             val indexing by downloadCache.isInitializing.collectAsState()
+            val sourceLoadingProgress by extensionManager.loadingProgress.collectAsState()
 
             val isSystemInDarkTheme = isSystemInDarkTheme()
             val statusBarBackgroundColor = when {
+                sourceLoadingProgress != null -> IndexingBannerBackgroundColor
                 indexing -> IndexingBannerBackgroundColor
                 downloadOnly -> DownloadedOnlyBannerBackgroundColor
                 incognito -> IncognitoModeBannerBackgroundColor
@@ -211,6 +212,7 @@ class MainActivity : BaseActivity() {
                             downloadedOnlyMode = downloadOnly,
                             incognitoMode = incognito,
                             indexing = indexing,
+                            sourceLoadingProgress = sourceLoadingProgress,
                             modifier = Modifier.windowInsetsPadding(scaffoldInsets),
                         )
                     },
@@ -269,7 +271,7 @@ class MainActivity : BaseActivity() {
         val startTime = System.currentTimeMillis()
         splashScreen?.setKeepOnScreenCondition {
             val elapsed = System.currentTimeMillis() - startTime
-            elapsed <= SPLASH_MIN_DURATION || (!ready && elapsed <= SPLASH_MAX_DURATION)
+            elapsed <= SPLASH_MIN_DURATION || (!extensionManager.isInitialized.value && elapsed <= SPLASH_MAX_DURATION)
         }
         setSplashScreenExitAnimation(splashScreen)
 
@@ -585,7 +587,6 @@ class MainActivity : BaseActivity() {
             lifecycleScope.launch { HomeScreen.openTab(tabToOpen) }
         }
 
-        ready = true
         return true
     }
 
@@ -603,5 +604,5 @@ class MainActivity : BaseActivity() {
 
 // Splash screen
 private const val SPLASH_MIN_DURATION = 500 // ms
-private const val SPLASH_MAX_DURATION = 5000 // ms
+private const val SPLASH_MAX_DURATION = 15000 // ms
 private const val SPLASH_EXIT_ANIM_DURATION = 400L // ms

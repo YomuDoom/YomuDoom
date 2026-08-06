@@ -40,7 +40,6 @@ import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
-import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import kotlinx.coroutines.channels.Channel
@@ -130,6 +129,20 @@ data object LibraryTab : Tab {
                             } else {
                                 snackbarHostState.showSnackbar(
                                     context.stringResource(MR.strings.information_no_entries_found),
+                                )
+                            }
+                        }
+                    },
+                    onClickContinueReading = {
+                        scope.launchIO {
+                            val history = screenModel.getLastReadHistory()
+                            if (history != null) {
+                                context.startActivity(
+                                    ReaderActivity.newIntent(context, history.mangaId, history.chapterId),
+                                )
+                            } else {
+                                snackbarHostState.showSnackbar(
+                                    context.stringResource(MR.strings.information_no_recent_manga),
                                 )
                             }
                         }
@@ -263,12 +276,6 @@ data object LibraryTab : Tab {
 
         LaunchedEffect(state.selectionMode, state.dialog) {
             HomeScreen.showBottomNav(!state.selectionMode)
-        }
-
-        LaunchedEffect(state.isLoading) {
-            if (!state.isLoading) {
-                (context as? MainActivity)?.ready = true
-            }
         }
 
         LaunchedEffect(Unit) {

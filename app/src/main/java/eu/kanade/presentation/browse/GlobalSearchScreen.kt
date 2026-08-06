@@ -15,8 +15,10 @@ import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchItemResult
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import tachiyomi.i18n.MR
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.presentation.core.components.material.Scaffold
+import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun GlobalSearchScreen(
@@ -75,11 +77,20 @@ internal fun GlobalSearchContent(
     ) {
         items.forEach { (source, result) ->
             item(key = source.id) {
+                val chaptersLabel = stringResource(MR.strings.chapters).lowercase()
                 GlobalSearchResultItem(
                     title = fromSourceId?.let {
                         "▶ ${source.name}".takeIf { source.id == fromSourceId }
                     } ?: source.name,
-                    subtitle = LocaleHelper.getLocalizedDisplayName(source.lang),
+                    subtitle = buildString {
+                        append(LocaleHelper.getLocalizedDisplayName(source.lang))
+                        if (result is SearchItemResult.Success && result.chapterCount > 0) {
+                            append(" · ")
+                            append(result.chapterCount)
+                            append(' ')
+                            append(chaptersLabel)
+                        }
+                    },
                     onClick = { onClickSource(source) },
                     modifier = Modifier.animateItem(),
                 ) {
