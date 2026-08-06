@@ -29,6 +29,8 @@
 - Cached `StubSource` metadata now appears in the source list while extensions are loading; live sources replace matching stubs as they become available.
 - Cached source items are marked as stubs and cannot be opened until their extension is loaded.
 - `SourceRepositoryImpl` now preserves the stub flag for the source UI.
+- Global manga search now has persisted `Consolidated` and `Legacy` modes in the three-dot menu.
+- Consolidated search keeps title similarity/chapter-count ranking; legacy search keeps the previous result ordering and avoids the extra chapter fetch.
 - `ExtensionLoader.loadExtensions` now accepts `onResult` and publishes/logs each result as it completes.
 - `ExtensionManager` updates installed/untrusted extension maps atomically per result, so sources can appear progressively instead of waiting for all extensions.
 - Per-extension Logcat entries now include loaded source counts, untrusted packages, and failed package names.
@@ -52,8 +54,8 @@
 ## Open Items
 - The phone was intentionally disconnected; do not install through ADB for this iteration.
 - Send the latest universal debug APK manually and test a cold start on the brother's phone.
-- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.1`, versionCode `26`).
-- Versioned manual-send copy: `apks/0.20.1/YomuDoom-v0.20.1-dev-7803-9b09c4c79c7b-universal.apk`.
+- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.2`, versionCode `27`).
+- Versioned manual-send copy: `apks/0.20.2/YomuDoom-v0.20.2-dev-7805-ac7205199405-universal.apk`.
 - Confirm installed extensions are shown as installed immediately after startup.
 - Compare launch/source timing against the user's device, ideally with the same extension count.
 - Keep this file updated when a new fix, script, or release flow is added.
@@ -61,8 +63,8 @@
 ## Versioning And Rollback
 - Checkpoint commit before cached sources: `3829cf77facc`.
 - Checkpoint tag: `checkpoint-before-cached-sources-2026-08-06`.
-- Current app version: `0.20.1`, `versionCode=26`.
-- Current debug identity: `app.mihon.dev`, `0.20.1-7803`, commit SHA `9b09c4c79c7b`.
+- Current app version: `0.20.2`, `versionCode=27`.
+- Current debug identity: `app.mihon.dev`, `0.20.2-7805`, commit SHA `ac7205199405`.
 - Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
 - Store local APK binaries under `apks/<version>/`; `apks/README.md` tracks their metadata and `.gitignore` keeps large binaries out of Git.
 - Use `:app:archiveDebugUniversalApk` for future versioned APK generation; it refuses to overwrite an existing filename.
