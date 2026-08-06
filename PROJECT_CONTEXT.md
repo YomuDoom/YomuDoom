@@ -14,6 +14,7 @@
 - Two package variants were seen before: `app.mihon` and `app.mihon.dev`; the brother's current package is `app.mihon.dev`.
 - `adb` is not directly in PATH; use `D:\AndroidSDK\platform-tools\adb.exe`.
 - The brother's device is `25078PC3EG`, Android 15 / SDK 35, serial previously seen as `6XL7PBCMDQOZNB49`.
+- The user's device is `22101316UG`, serial `lby59h9h5pv4kfp7`; `app.mihon.dev` was updated successfully to `0.20.2-7805` / `versionCode 27` on 2026-08-06 17:36, without clearing data.
 - `android.permission.QUERY_ALL_PACKAGES` is already in the manifest.
 - `MangaBottomActionMenu` has a deliberate 1s delay for long-press confirmation and is not the nav lag issue.
 - The brother's app data contains about 104 private `.ext` extensions; startup previously took about 20 seconds in Logcat and felt close to one minute in the UI.
@@ -52,7 +53,7 @@
 - `python send_apk_whatsapp.py`
 
 ## Open Items
-- The phone was intentionally disconnected; do not install through ADB for this iteration.
+- The brother's phone was intentionally disconnected; the user's phone is now installed and connected through ADB.
 - Send the latest universal debug APK manually and test a cold start on the brother's phone.
 - Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.2`, versionCode `27`).
 - Versioned manual-send copy: `apks/0.20.2/YomuDoom-v0.20.2-dev-7805-ac7205199405-universal.apk`.
