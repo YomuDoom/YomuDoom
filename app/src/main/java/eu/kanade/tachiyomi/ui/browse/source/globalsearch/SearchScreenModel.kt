@@ -265,8 +265,8 @@ abstract class SearchScreenModel(
                     val currentResult = this[matchingIndex]
                     val candidates = currentResult.candidates + candidate
                     val selected = candidates.maxWithOrNull(
-                        compareByDescending<ConsolidatedSearchCandidate> { it.chapterCount }
-                            .thenByDescending { it.matchScore },
+                        compareBy<ConsolidatedSearchCandidate> { it.chapterCount }
+                            .thenBy { it.matchScore },
                     ) ?: currentResult.selected
                     set(
                         matchingIndex,
@@ -298,8 +298,8 @@ abstract class SearchScreenModel(
     }
 
     private fun sortConsolidatedItems(items: List<ConsolidatedSearchResult>) = items.sortedWith(
-        compareByDescending<ConsolidatedSearchResult> { it.chapterCount }
-            .thenByDescending { it.matchScore }
+        compareByDescending<ConsolidatedSearchResult> { it.bestMatchScore }
+            .thenByDescending { it.chapterCount }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.manga.title },
     )
 
@@ -422,6 +422,7 @@ data class ConsolidatedSearchResult(
     val source: Source get() = selected.source
     val chapterCount: Int get() = selected.chapterCount
     val matchScore: Double get() = selected.matchScore
+    val bestMatchScore: Double get() = candidates.maxOfOrNull { it.matchScore } ?: matchScore
 }
 
 data class ConsolidatedSearchCandidate(

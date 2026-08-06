@@ -100,7 +100,8 @@ fun ConsolidatedSourceMenu(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                "${candidate.source.name} · ${candidate.chapterCount} " +
+                                "${candidate.source.name} (${candidate.source.lang.uppercase()}) · " +
+                                    "${candidate.chapterCount} " +
                                     stringResource(MR.strings.chapters).lowercase(),
                             )
                         },
