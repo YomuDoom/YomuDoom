@@ -69,6 +69,7 @@
 - Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
 - Store local APK binaries under `apks/<version>/`; `apks/README.md` tracks their metadata and `.gitignore` keeps large binaries out of Git.
 - Use `:app:archiveDebugUniversalApk` for future versioned APK generation; it refuses to overwrite an existing filename.
+- `:app:installDebug` depends on the archive task, so direct device installation also preserves a versioned APK.
 - If this feature is bad, restore the checkpoint code and publish it with a new higher `versionCode`; Android normally rejects downgrades over an installed newer version.
 
 ## Session Memory Rule

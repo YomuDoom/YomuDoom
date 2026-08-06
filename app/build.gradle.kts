@@ -373,3 +373,9 @@ tasks.register("archiveDebugUniversalApk") {
         logger.lifecycle("Archived APK: ${target.absolutePath}")
     }
 }
+
+tasks.configureEach {
+    if (name == "installDebug") {
+        dependsOn("archiveDebugUniversalApk")
+    }
+}

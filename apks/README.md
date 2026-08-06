@@ -16,3 +16,5 @@ Use `YomuDoom-v<version>-<variant>-<commit-count>-<sha>-universal.apk`. Never ov
 ## Archive Command
 
 Run `./gradlew :app:archiveDebugUniversalApk` after changing the code. The task creates the version directory and refuses to overwrite an existing APK.
+
+`./gradlew :app:installDebug` also archives the APK automatically before installing it on the connected device.
