@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import tachiyomi.domain.source.model.StubSource
@@ -38,10 +38,25 @@ class AndroidSourceManager(
     private val scope = CoroutineScope(Job() + Dispatchers.IO)
 
     private val sourcesMapFlow = MutableStateFlow(ConcurrentHashMap<Long, Source>())
+    private val cachedStubSourcesFlow = MutableStateFlow(emptyMap<Long, StubSource>())
+    private val cachedStubSourcesLoaded = MutableStateFlow(false)
 
-    private val stubSourcesMap = ConcurrentHashMap<Long, StubSource>()
-
-    override val sources: Flow<List<Source>> = sourcesMapFlow.map { it.values.toList() }
+    override val sources: Flow<List<Source>> = combine(
+        sourcesMapFlow,
+        cachedStubSourcesFlow,
+        cachedStubSourcesLoaded,
+        extensionManager.isInitialized,
+    ) { liveSources, cachedSources, cacheLoaded, extensionsInitialized ->
+        val sources = if (!cacheLoaded || !extensionsInitialized) {
+            mutableMapOf<Long, Source>().apply {
+                putAll(cachedSources)
+                putAll(liveSources)
+            }
+        } else {
+            liveSources
+        }
+        sources.values.toList()
+    }
 
     init {
         scope.launch {
@@ -70,10 +85,8 @@ class AndroidSourceManager(
         scope.launch {
             sourceRepository.subscribeAll()
                 .collectLatest { sources ->
-                    stubSourcesMap.clear()
-                    sources.forEach {
-                        stubSourcesMap[it.id] = it
-                    }
+                    cachedStubSourcesFlow.value = sources.associateBy { it.id }
+                    cachedStubSourcesLoaded.value = true
                 }
         }
     }
@@ -83,7 +96,7 @@ class AndroidSourceManager(
     }
 
     override fun getOrStub(sourceKey: Long): Source {
-        return sourcesMapFlow.value[sourceKey] ?: stubSourcesMap.getOrPut(sourceKey) {
+        return sourcesMapFlow.value[sourceKey] ?: cachedStubSourcesFlow.value[sourceKey] ?: run {
             runBlocking { createStubSource(sourceKey) }
         }
     }
@@ -94,7 +107,7 @@ class AndroidSourceManager(
 
     override fun getStubSources(): List<StubSource> {
         val onlineSourceIds = getOnlineSources().map { it.id }
-        return stubSourcesMap.values.filterNot { it.id in onlineSourceIds }
+        return cachedStubSourcesFlow.value.values.filterNot { it.id in onlineSourceIds }
     }
 
     private fun registerStubSource(source: StubSource) {

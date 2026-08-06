@@ -117,7 +117,7 @@ private fun SourceItem(
     BaseSourceItem(
         modifier = modifier,
         source = source,
-        onClickItem = { onClickItem(source, Listing.Popular) },
+        onClickItem = { if (!source.isStub) onClickItem(source, Listing.Popular) },
         onLongClickItem = { onLongClickItem(source) },
         action = {
             if (source.supportsLatest) {

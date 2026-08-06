@@ -92,6 +92,6 @@ class SourceRepositoryImpl(
         lang = source.lang,
         name = source.name,
         supportsLatest = false,
-        isStub = false,
+        isStub = source is StubSource,
     )
 }

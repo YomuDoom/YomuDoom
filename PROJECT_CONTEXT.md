@@ -26,6 +26,9 @@
 - Extension language seeding now runs at startup and on extension install/update.
 - Startup splash waits for extension initialization with a timeout fallback.
 - `AndroidSourceManager` now publishes persisted stub sources instead of discarding the updated map.
+- Cached `StubSource` metadata now appears in the source list while extensions are loading; live sources replace matching stubs as they become available.
+- Cached source items are marked as stubs and cannot be opened until their extension is loaded.
+- `SourceRepositoryImpl` now preserves the stub flag for the source UI.
 - `ExtensionLoader.loadExtensions` now accepts `onResult` and publishes/logs each result as it completes.
 - `ExtensionManager` updates installed/untrusted extension maps atomically per result, so sources can appear progressively instead of waiting for all extensions.
 - Per-extension Logcat entries now include loaded source counts, untrusted packages, and failed package names.
@@ -40,18 +43,27 @@
 
 ## Useful Commands
 - `./gradlew :app:compileDebugKotlin`
+- `./gradlew :app:assembleDebug`
 - `./gradlew :app:installDebug`
 - `python send_apk_whatsapp.py --dry-run`
 - `python send_apk_whatsapp.py`
 
 ## Open Items
 - The phone was intentionally disconnected; do not install through ADB for this iteration.
-- Generate the latest universal debug APK and send it manually.
-- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk`.
-- Manual-send copy: `C:\Users\marco\Downloads\YomuDoom.apk` (generated 2026-08-06 15:55).
+- Send the latest universal debug APK manually and test a cold start on the brother's phone.
+- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.1`, versionCode `26`).
+- Manual-send copy: `C:\Users\marco\Downloads\YomuDoom-v0.20.1-dev-7800-3829cf77facc-universal.apk` (generated 2026-08-06 16:14).
 - Confirm installed extensions are shown as installed immediately after startup.
 - Compare launch/source timing against the user's device, ideally with the same extension count.
 - Keep this file updated when a new fix, script, or release flow is added.
+
+## Versioning And Rollback
+- Checkpoint commit before cached sources: `3829cf77facc`.
+- Checkpoint tag: `checkpoint-before-cached-sources-2026-08-06`.
+- Current app version: `0.20.1`, `versionCode=26`.
+- Current debug identity: `app.mihon.dev`, `0.20.1-7800`, commit SHA `3829cf77facc`.
+- Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
+- If this feature is bad, restore the checkpoint code and publish it with a new higher `versionCode`; Android normally rejects downgrades over an installed newer version.
 
 ## Session Memory Rule
 - On session compaction, read this file before inspecting or changing code.
