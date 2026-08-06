@@ -1,4 +1,5 @@
 import mihon.gradle.Config
+import mihon.gradle.exec
 import mihon.gradle.getBuildTime
 import mihon.gradle.getLatestCommitCount
 import mihon.gradle.getLatestCommitSha
@@ -345,5 +346,30 @@ androidComponents {
         // Only excluding in standard flavor because this breaks
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
+    }
+}
+
+val archiveVersion = android.defaultConfig.versionName ?: error("Missing app version name")
+val archiveCommitCount = getLatestCommitCount()
+val archiveCommitSha = exec("git rev-parse --short=12 HEAD")
+
+tasks.register("archiveDebugUniversalApk") {
+    dependsOn("assembleDebug")
+
+    doLast {
+        val destination = rootProject.layout.projectDirectory.dir("apks/$archiveVersion").asFile
+        val apkName = "YomuDoom-v$archiveVersion-dev-$archiveCommitCount-$archiveCommitSha-universal.apk"
+        val target = destination.resolve(apkName)
+        if (target.exists()) {
+            logger.lifecycle("APK already archived: ${target.absolutePath}")
+            return@doLast
+        }
+
+        copy {
+            from(layout.buildDirectory.file("outputs/apk/debug/app-universal-debug.apk"))
+            into(destination)
+            rename { apkName }
+        }
+        logger.lifecycle("Archived APK: ${target.absolutePath}")
     }
 }

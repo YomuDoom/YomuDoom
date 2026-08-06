@@ -3,6 +3,9 @@
 .kotlin
 build
 
+# Local APK archive (version metadata is tracked, binaries stay local)
+/apks/**/*.apk
+
 # IDE files
 *.iml
 .idea/*
