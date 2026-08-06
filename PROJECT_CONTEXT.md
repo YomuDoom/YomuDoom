@@ -14,7 +14,7 @@
 - Two package variants were seen before: `app.mihon` and `app.mihon.dev`; the brother's current package is `app.mihon.dev`.
 - `adb` is not directly in PATH; use `D:\AndroidSDK\platform-tools\adb.exe`.
 - The brother's device is `25078PC3EG`, Android 15 / SDK 35, serial previously seen as `6XL7PBCMDQOZNB49`.
-- The user's device is `22101316UG`, serial `lby59h9h5pv4kfp7`; `app.mihon.dev` was updated successfully to `0.20.4-7812` / `versionCode 29`, without clearing data.
+- The user's device is `22101316UG`, serial `lby59h9h5pv4kfp7`; `app.mihon.dev` was updated successfully to `0.20.5-7814` / `versionCode 30`, without clearing data.
 - `android.permission.QUERY_ALL_PACKAGES` is already in the manifest.
 - `MangaBottomActionMenu` has a deliberate 1s delay for long-press confirmation and is not the nav lag issue.
 - The brother's app data contains about 104 private `.ext` extensions; startup previously took about 20 seconds in Logcat and felt close to one minute in the UI.
@@ -35,6 +35,7 @@
 - Consolidated manga search now groups matching works across enabled sources and keeps one result using the source with the most chapters.
 - Legacy search remains source-by-source but orders sources by the chapter count of their best result.
 - Consolidated results hide the source in the main card and offer a per-work source menu with all alternatives.
+- Consolidated ordering now prioritizes the best title similarity, then chapter count; automatic source selection uses the highest chapter count, with source language abbreviations in the menu.
 - `ExtensionLoader.loadExtensions` now accepts `onResult` and publishes/logs each result as it completes.
 - `ExtensionManager` updates installed/untrusted extension maps atomically per result, so sources can appear progressively instead of waiting for all extensions.
 - Per-extension Logcat entries now include loaded source counts, untrusted packages, and failed package names.
@@ -58,8 +59,8 @@
 ## Open Items
 - The brother's phone was intentionally disconnected; the user's phone is now installed and connected through ADB.
 - Send the latest universal debug APK manually and test a cold start on the brother's phone.
-- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.4`, versionCode `29`).
-- Versioned manual-send copy: `apks/0.20.4/YomuDoom-v0.20.4-dev-7812-ef9053819a2a-universal.apk`.
+- Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.5`, versionCode `30`).
+- Versioned manual-send copy: `apks/0.20.5/YomuDoom-v0.20.5-dev-7814-d2eb193dbc00-universal.apk`.
 - Confirm installed extensions are shown as installed immediately after startup.
 - Compare launch/source timing against the user's device, ideally with the same extension count.
 - Keep this file updated when a new fix, script, or release flow is added.
@@ -67,8 +68,8 @@
 ## Versioning And Rollback
 - Checkpoint commit before cached sources: `3829cf77facc`.
 - Checkpoint tag: `checkpoint-before-cached-sources-2026-08-06`.
-- Current app version: `0.20.4`, `versionCode=29`.
-- Current debug identity: `app.mihon.dev`, `0.20.4-7812`, commit SHA `ef9053819a2a`.
+- Current app version: `0.20.5`, `versionCode=30`.
+- Current debug identity: `app.mihon.dev`, `0.20.5-7814`, commit SHA `d2eb193dbc00`.
 - Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
 - Store local APK binaries under `apks/<version>/`; `apks/README.md` tracks their metadata and `.gitignore` keeps large binaries out of Git.
 - Use `:app:archiveDebugUniversalApk` for future versioned APK generation; it refuses to overwrite an existing filename.
