@@ -64,6 +64,11 @@ class SourcePreferences(
         false,
     )
 
+    val globalSearchMode: Preference<GlobalSearchMode> = preferenceStore.getEnum(
+        Preference.appStateKey("global_search_mode"),
+        GlobalSearchMode.CONSOLIDATED,
+    )
+
     val migrationSources: Preference<List<Long>> = preferenceStore.getLongArray("migration_sources", emptyList())
 
     val migrationFlags: Preference<Set<MigrationFlag>> = preferenceStore.getObjectFromInt(
@@ -86,4 +91,9 @@ class SourcePreferences(
         "migration_hide_without_updates",
         false,
     )
+}
+
+enum class GlobalSearchMode {
+    LEGACY,
+    CONSOLIDATED,
 }

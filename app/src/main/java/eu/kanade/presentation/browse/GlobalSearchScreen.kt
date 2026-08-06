@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
+import eu.kanade.domain.source.service.GlobalSearchMode
 import eu.kanade.presentation.browse.components.GlobalSearchCardRow
 import eu.kanade.presentation.browse.components.GlobalSearchErrorResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
@@ -15,8 +16,8 @@ import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchItemResult
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
-import tachiyomi.i18n.MR
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -27,6 +28,8 @@ fun GlobalSearchScreen(
     onChangeSearchQuery: (String?) -> Unit,
     onSearch: (String) -> Unit,
     onChangeSearchFilter: (SourceFilter) -> Unit,
+    searchMode: GlobalSearchMode,
+    onChangeSearchMode: (GlobalSearchMode) -> Unit,
     onToggleResults: () -> Unit,
     getManga: @Composable (Manga) -> State<Manga>,
     onClickSource: (Source) -> Unit,
@@ -45,6 +48,9 @@ fun GlobalSearchScreen(
                 hideSourceFilter = false,
                 sourceFilter = state.sourceFilter,
                 onChangeSearchFilter = onChangeSearchFilter,
+                showSearchMode = true,
+                searchMode = searchMode,
+                onChangeSearchMode = onChangeSearchMode,
                 onlyShowHasResults = state.onlyShowHasResults,
                 onToggleResults = onToggleResults,
                 scrollBehavior = scrollBehavior,

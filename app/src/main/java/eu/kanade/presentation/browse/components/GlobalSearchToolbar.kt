@@ -11,21 +11,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import eu.kanade.domain.source.service.GlobalSearchMode
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
 import tachiyomi.i18n.MR
@@ -46,7 +56,12 @@ fun GlobalSearchToolbar(
     onlyShowHasResults: Boolean,
     onToggleResults: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
+    showSearchMode: Boolean = false,
+    searchMode: GlobalSearchMode = GlobalSearchMode.CONSOLIDATED,
+    onChangeSearchMode: (GlobalSearchMode) -> Unit = {},
 ) {
+    var searchModeMenuExpanded by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
         Box {
             SearchToolbar(
@@ -55,6 +70,47 @@ fun GlobalSearchToolbar(
                 onSearch = onSearch,
                 onClickCloseSearch = navigateUp,
                 navigateUp = navigateUp,
+                actions = {
+                    if (showSearchMode) {
+                        Box {
+                            IconButton(onClick = { searchModeMenuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.MoreVert,
+                                    contentDescription = stringResource(MR.strings.search_mode),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = searchModeMenuExpanded,
+                                onDismissRequest = { searchModeMenuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(MR.strings.search_mode_consolidated)) },
+                                    onClick = {
+                                        onChangeSearchMode(GlobalSearchMode.CONSOLIDATED)
+                                        searchModeMenuExpanded = false
+                                    },
+                                    trailingIcon = {
+                                        if (searchMode == GlobalSearchMode.CONSOLIDATED) {
+                                            Icon(Icons.Outlined.Check, contentDescription = null)
+                                        }
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(MR.strings.search_mode_legacy)) },
+                                    onClick = {
+                                        onChangeSearchMode(GlobalSearchMode.LEGACY)
+                                        searchModeMenuExpanded = false
+                                    },
+                                    trailingIcon = {
+                                        if (searchMode == GlobalSearchMode.LEGACY) {
+                                            Icon(Icons.Outlined.Check, contentDescription = null)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
             if (progress in 1..<total) {

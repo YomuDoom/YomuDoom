@@ -715,6 +715,9 @@
     <string name="track_delete_remote_text">Também remover do %s</string>
     <string name="delete_downloaded">Deletar os disponíveis offline</string>
     <string name="has_results">Há resultados</string>
+    <string name="search_mode">Modo de busca</string>
+    <string name="search_mode_consolidated">Busca consolidada</string>
+    <string name="search_mode_legacy">Busca legada</string>
     <string name="syncing_library">Sincronizando a biblioteca</string>
     <string name="library_sync_complete">Sincronização da biblioteca finalizada</string>
     <string name="information_cloudflare_help">Toque aqui para obter ajuda com o Cloudflare</string>

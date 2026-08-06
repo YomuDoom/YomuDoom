@@ -7,6 +7,7 @@ import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.aallam.similarity.NormalizedLevenshtein
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.domain.source.service.GlobalSearchMode
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
@@ -58,12 +59,21 @@ abstract class SearchScreenModel(
     protected var extensionFilter: String? = null
 
     open val sortComparator = { map: Map<Source, SearchItemResult> ->
-        compareByDescending<Source> { (map[it] as? SearchItemResult.Success)?.chapterCount ?: -1 }
-            .thenBy { "${it.id}" !in pinnedSources }
-            .thenBy { "${it.name.lowercase()} (${it.lang})" }
+        if (state.value.searchMode == GlobalSearchMode.LEGACY) {
+            compareBy<Source>(
+                { (map[it] as? SearchItemResult.Success)?.isEmpty ?: true },
+                { "${it.id}" !in pinnedSources },
+                { "${it.name.lowercase()} (${it.lang})" },
+            )
+        } else {
+            compareByDescending<Source> { (map[it] as? SearchItemResult.Success)?.chapterCount ?: -1 }
+                .thenBy { "${it.id}" !in pinnedSources }
+                .thenBy { "${it.name.lowercase()} (${it.lang})" }
+        }
     }
 
     init {
+        mutableState.update { it.copy(searchMode = preferences.globalSearchMode.get()) }
         screenModelScope.launch {
             preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
@@ -120,6 +130,17 @@ abstract class SearchScreenModel(
         preferences.globalSearchFilterState.toggle()
     }
 
+    fun setSearchMode(mode: GlobalSearchMode) {
+        if (mode == state.value.searchMode) return
+
+        preferences.globalSearchMode.set(mode)
+        lastQuery = null
+        mutableState.update { it.copy(searchMode = mode, items = emptyMap()) }
+        if (!state.value.searchQuery.isNullOrBlank()) {
+            search()
+        }
+    }
+
     fun search() {
         val query = state.value.searchQuery
         val sourceFilter = state.value.sourceFilter
@@ -167,10 +188,14 @@ abstract class SearchScreenModel(
                             .distinctBy { it.url }
                             .let { networkToLocalManga(it) }
 
-                        val chapterCount = titles
-                            .bestSearchMatch(query)
-                            ?.let { manga -> getChapterCount(source, manga) }
-                            ?: 0
+                        val chapterCount = if (state.value.searchMode == GlobalSearchMode.CONSOLIDATED) {
+                            titles
+                                .bestSearchMatch(query)
+                                ?.let { manga -> getChapterCount(source, manga) }
+                                ?: 0
+                        } else {
+                            0
+                        }
 
                         if (isActive) {
                             updateItem(source, SearchItemResult.Success(titles, chapterCount))
@@ -252,6 +277,7 @@ abstract class SearchScreenModel(
         val from: Manga? = null,
         val searchQuery: String? = null,
         val sourceFilter: SourceFilter = SourceFilter.All,
+        val searchMode: GlobalSearchMode = GlobalSearchMode.CONSOLIDATED,
         val onlyShowHasResults: Boolean = false,
         val items: Map<Source, SearchItemResult> = mapOf(),
         val dialog: Dialog? = null,

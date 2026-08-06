@@ -714,6 +714,9 @@
     <string name="popular">Popular</string>
     <string name="browse">Browse</string>
     <string name="has_results">Has results</string>
+    <string name="search_mode">Search mode</string>
+    <string name="search_mode_consolidated">Consolidated search</string>
+    <string name="search_mode_legacy">Legacy search</string>
     <string name="local_source_help_guide">Local source guide</string>
     <string name="no_pinned_sources">You have no pinned sources</string>
     <string name="chapter_not_found">Chapter not found</string>
