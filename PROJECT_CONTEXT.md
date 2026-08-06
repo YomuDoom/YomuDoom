@@ -52,7 +52,7 @@
 - The phone was intentionally disconnected; do not install through ADB for this iteration.
 - Send the latest universal debug APK manually and test a cold start on the brother's phone.
 - Latest successful build: `app/build/outputs/apk/debug/app-universal-debug.apk` (`0.20.1`, versionCode `26`).
-- Manual-send copy: `C:\Users\marco\Downloads\YomuDoom-v0.20.1-dev-7800-3829cf77facc-universal.apk` (generated 2026-08-06 16:14).
+- Manual-send copy: `C:\Users\marco\Downloads\YomuDoom-v0.20.1-dev-7801-313220cf7013-universal.apk` (generated 2026-08-06 16:16).
 - Confirm installed extensions are shown as installed immediately after startup.
 - Compare launch/source timing against the user's device, ideally with the same extension count.
 - Keep this file updated when a new fix, script, or release flow is added.
@@ -61,7 +61,7 @@
 - Checkpoint commit before cached sources: `3829cf77facc`.
 - Checkpoint tag: `checkpoint-before-cached-sources-2026-08-06`.
 - Current app version: `0.20.1`, `versionCode=26`.
-- Current debug identity: `app.mihon.dev`, `0.20.1-7800`, commit SHA `3829cf77facc`.
+- Current debug identity: `app.mihon.dev`, `0.20.1-7801`, commit SHA `313220cf7013`.
 - Keep APK filenames with version, commit count, and SHA; do not overwrite the only copy with `YomuDoom.apk`.
 - If this feature is bad, restore the checkpoint code and publish it with a new higher `versionCode`; Android normally rejects downgrades over an installed newer version.
 
