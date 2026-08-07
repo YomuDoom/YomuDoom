@@ -110,6 +110,7 @@ fun MangaScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onSimilarClicked: () -> Unit,
     onEditNotesClicked: () -> Unit,
 
     // For bottom action menu
@@ -157,9 +158,10 @@ fun MangaScreen(
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
-            onEditIntervalClicked = onEditFetchIntervalClicked,
-            onMigrateClicked = onMigrateClicked,
-            onEditNotesClicked = onEditNotesClicked,
+             onEditIntervalClicked = onEditFetchIntervalClicked,
+             onMigrateClicked = onMigrateClicked,
+             onSimilarClicked = onSimilarClicked,
+             onEditNotesClicked = onEditNotesClicked,
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
             onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
@@ -193,9 +195,10 @@ fun MangaScreen(
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
-            onEditIntervalClicked = onEditFetchIntervalClicked,
-            onMigrateClicked = onMigrateClicked,
-            onEditNotesClicked = onEditNotesClicked,
+             onEditIntervalClicked = onEditFetchIntervalClicked,
+             onMigrateClicked = onMigrateClicked,
+             onSimilarClicked = onSimilarClicked,
+             onEditNotesClicked = onEditNotesClicked,
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
             onMarkPreviousAsReadClicked = onMarkPreviousAsReadClicked,
@@ -241,6 +244,7 @@ private fun MangaScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onSimilarClicked: () -> Unit,
     onEditNotesClicked: () -> Unit,
 
     // For bottom action menu
@@ -299,6 +303,7 @@ private fun MangaScreenSmallImpl(
                 onClickDownload = onDownloadActionClicked,
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
+                onClickSimilar = onSimilarClicked,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
                 actionModeCounter = selectedChapterCount,
@@ -483,6 +488,7 @@ fun MangaScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onSimilarClicked: () -> Unit,
     onEditNotesClicked: () -> Unit,
 
     // For bottom action menu
@@ -534,6 +540,7 @@ fun MangaScreenLargeImpl(
                 onClickDownload = onDownloadActionClicked,
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
+                onClickSimilar = onSimilarClicked,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
                 onCancelActionMode = { onAllChapterSelected(false) },

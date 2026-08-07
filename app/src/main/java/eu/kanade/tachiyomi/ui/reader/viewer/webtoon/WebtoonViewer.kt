@@ -19,14 +19,19 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Implementation of a [Viewer] to display pages with a [RecyclerView].
@@ -36,6 +41,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     val downloadManager: DownloadManager by injectLazy()
 
     private val scope = MainScope()
+    private var autoScrollJob: Job? = null
+
+    var autoScrollStateChangedListener: ((Boolean) -> Unit)? = null
 
     /**
      * Recycler view used by this viewer.
@@ -197,8 +205,39 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Destroys this viewer. Called when leaving the reader or swapping viewers.
      */
     override fun destroy() {
+        stopAutoScroll()
         super.destroy()
         scope.cancel()
+    }
+
+    fun startAutoScroll(speedDpPerSecond: Int) {
+        stopAutoScroll()
+
+        val pixelsPerSecond = speedDpPerSecond
+            .coerceIn(MIN_AUTO_SCROLL_SPEED, MAX_AUTO_SCROLL_SPEED) * recycler.resources.displayMetrics.density
+        autoScrollJob = scope.launch {
+            var previousTime = System.nanoTime()
+            while (isActive) {
+                delay(AUTO_SCROLL_FRAME_DELAY_MILLIS)
+                val currentTime = System.nanoTime()
+                val elapsedSeconds = (currentTime - previousTime) / NANOSECONDS_PER_SECOND
+                previousTime = currentTime
+                val distance = (pixelsPerSecond * elapsedSeconds).roundToInt().coerceAtLeast(1)
+                val previousOffset = recycler.computeVerticalScrollOffset()
+                recycler.scrollBy(0, distance)
+                if (recycler.computeVerticalScrollOffset() == previousOffset && !recycler.canScrollVertically(1)) {
+                    stopAutoScroll()
+                    break
+                }
+            }
+        }
+        autoScrollStateChangedListener?.invoke(true)
+    }
+
+    fun stopAutoScroll() {
+        autoScrollJob?.cancel()
+        autoScrollJob = null
+        autoScrollStateChangedListener?.invoke(false)
     }
 
     /**
@@ -363,3 +402,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
 // Double the cache size to reduce rebinds/recycles incurred by the extra layout space on scroll direction changes
 private const val RECYCLER_VIEW_CACHE_SIZE = 4
+private const val AUTO_SCROLL_FRAME_DELAY_MILLIS = 16L
+private const val NANOSECONDS_PER_SECOND = 1_000_000_000f
+private const val MIN_AUTO_SCROLL_SPEED = 10
+private const val MAX_AUTO_SCROLL_SPEED = 300

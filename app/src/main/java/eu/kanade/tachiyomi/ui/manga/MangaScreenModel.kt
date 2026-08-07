@@ -62,6 +62,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
@@ -70,6 +71,7 @@ import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.chapter.service.calculateChapterGap
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.history.repository.HistoryRepository
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.interactor.GetMangaWithChapters
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
@@ -90,6 +92,7 @@ class MangaScreenModel(
     private val lifecycle: Lifecycle,
     private val mangaId: Long,
     private val isFromSource: Boolean,
+    private val isFromLibrary: Boolean,
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     trackPreferences: TrackPreferences = Injekt.get(),
     readerPreferences: ReaderPreferences = Injekt.get(),
@@ -112,6 +115,8 @@ class MangaScreenModel(
     private val addTracks: AddTracks = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
+    private val historyRepository: HistoryRepository = Injekt.get(),
+    private val getChapter: GetChapter = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
     private val updateMangaFromRemote: UpdateMangaFromRemote = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
@@ -159,6 +164,32 @@ class MangaScreenModel(
         }
     }
 
+    private fun applySortOverride(manga: Manga, descending: Boolean? = successState?.sortDescendingOverride): Manga {
+        if (descending == null) return manga
+
+        val direction = if (descending) Manga.CHAPTER_SORT_DESC else Manga.CHAPTER_SORT_ASC
+        return manga.copy(
+            chapterFlags = (manga.chapterFlags and Manga.CHAPTER_SORT_DIR_MASK.inv()) or direction,
+        )
+    }
+
+    private suspend fun getLibrarySortDescending(manga: Manga, chapters: List<Chapter>): Boolean {
+        val numberedChapters = chapters
+            .filter { it.isRecognizedNumber }
+            .sortedBy { it.chapterNumber }
+        if (numberedChapters.isEmpty()) return false
+
+        val lastHistory = historyRepository
+            .getHistoryByMangaId(manga.id)
+            .maxByOrNull { it.readAt?.time ?: Long.MIN_VALUE }
+            ?: return false
+        val currentChapter = getChapter.await(lastHistory.chapterId) ?: return false
+        val currentIndex = numberedChapters.indexOfFirst { it.id == currentChapter.id }
+        if (currentIndex < 0) return false
+
+        return currentIndex * 2 >= numberedChapters.size
+    }
+
     init {
         screenModelScope.launchIO {
             combine(
@@ -170,7 +201,7 @@ class MangaScreenModel(
                 .collectLatest { (manga, chapters) ->
                     updateSuccessState {
                         it.copy(
-                            manga = manga,
+                            manga = applySortOverride(manga),
                             chapters = chapters.toChapterListItems(manga),
                         )
                     }
@@ -204,22 +235,28 @@ class MangaScreenModel(
         screenModelScope.launchIO {
             val manga = getMangaAndChapters.awaitManga(mangaId)
             val chapters = getMangaAndChapters.awaitChapters(mangaId, applyScanlatorFilter = true)
-                .toChapterListItems(manga)
+            val chapterItems = chapters.toChapterListItems(manga)
 
             if (!manga.favorite) {
                 setMangaDefaultChapterFlags.await(manga)
             }
 
             val needRefreshInfo = !manga.initialized
-            val needRefreshChapter = chapters.isEmpty()
+            val needRefreshChapter = chapterItems.isEmpty()
+            val sortDescendingOverride = if (isFromLibrary) {
+                getLibrarySortDescending(manga, chapters)
+            } else {
+                null
+            }
 
             // Show what we have earlier
             mutableState.update {
                 State.Success(
-                    manga = manga,
+                    manga = applySortOverride(manga, sortDescendingOverride),
+                    sortDescendingOverride = sortDescendingOverride,
                     source = Injekt.get<SourceManager>().getOrStub(manga.source),
                     isFromSource = isFromSource,
-                    chapters = chapters,
+                    chapters = chapterItems,
                     availableScanlators = getAvailableScanlators.await(mangaId),
                     excludedScanlators = getExcludedScanlators.await(mangaId),
                     isRefreshingData = needRefreshInfo || needRefreshChapter,
@@ -909,6 +946,8 @@ class MangaScreenModel(
     fun setSorting(sort: Long) {
         val manga = successState?.manga ?: return
 
+        updateSuccessState { it.copy(sortDescendingOverride = null) }
+
         screenModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetSortingModeOrFlipOrder(manga, sort)
         }
@@ -927,6 +966,7 @@ class MangaScreenModel(
 
     fun resetToDefaultSettings() {
         val manga = successState?.manga ?: return
+        updateSuccessState { it.copy(sortDescendingOverride = null) }
         screenModelScope.launchNonCancellable {
             setMangaDefaultChapterFlags.await(manga)
         }
@@ -1104,6 +1144,7 @@ class MangaScreenModel(
         @Immutable
         data class Success(
             val manga: Manga,
+            val sortDescendingOverride: Boolean? = null,
             val source: Source,
             val isFromSource: Boolean,
             val chapters: List<ChapterList.Item>,

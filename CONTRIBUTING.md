@@ -1,49 +1,24 @@
-Looking to report an issue/bug or make a feature request? Please refer to the [README file](https://github.com/mihonapp/mihon#issues-feature-requests-and-contributing).
+# Contributing to YomuDoom
 
----
-
-Thanks for your interest in contributing to Mihon!
-
-
-# Code contributions
-
-Pull requests are welcome!
-
-If you're interested in taking on [an open issue](https://github.com/mihonapp/mihon/issues), please comment on it so others are aware.
-You do not need to ask for permission nor an assignment.
+Pull requests are welcome. For larger changes, open an issue first so the scope can be discussed.
 
 ## Prerequisites
 
-Before you start, please note that the ability to use following technologies is **required** and that existing contributors will not actively teach them to you.
+- Basic Android development knowledge.
+- Kotlin familiarity.
+- Android Studio and a device or emulator for testing.
 
-- Basic [Android development](https://developer.android.com/)
-- [Kotlin](https://kotlinlang.org/)
+## Pull Requests
 
-### Tools
+- Explain the problem and the intended behavior.
+- Test the affected code and include the command used.
+- Check visual changes in light and dark themes.
+- Keep changes focused and preserve the existing license and attribution.
 
-- [Android Studio](https://developer.android.com/studio)
-- Emulator or phone with developer options enabled to test changes.
+## Translations
 
-## Getting help
+Translation changes belong in the `i18n` module. Add or update the Brazilian Portuguese resources when changing user-facing text.
 
-- Join [the Discord server](https://discord.gg/mihon) for online help and to ask questions while developing.
+## Security
 
-# Translations
-
-Translations are done externally via Weblate. See [our website](https://mihon.app/docs/contribute#translation) for more details.
-
-
-# Forks
-
-Forks are allowed so long as they abide by [the project's LICENSE](https://github.com/mihonapp/mihon/blob/main/LICENSE).
-
-When creating a fork, remember to:
-
-- To avoid confusion with the main app:
-    - Change the app name
-    - Change the app icon
-    - Change or disable the [app update checker](https://github.com/mihonapp/mihon/blob/main/app/src/main/java/eu/kanade/tachiyomi/data/updater/AppUpdateChecker.kt)
-- To avoid installation conflicts:
-    - Change the `applicationId` in [`build.gradle.kts`](https://github.com/mihonapp/mihon/blob/main/app/build.gradle.kts)
-- To avoid having your data polluting the main app's analytics and crash report services:
-    - If you want to use Firebase analytics, replace [`google-services.json`](https://github.com/mihonapp/mihon/blob/main/app/src/standard/google-services.json) with your own
+Do not publish private data, signing keys, Firebase configuration, device identifiers, or user content in issues or pull requests. Use GitHub's private vulnerability reporting for security-sensitive reports when available.

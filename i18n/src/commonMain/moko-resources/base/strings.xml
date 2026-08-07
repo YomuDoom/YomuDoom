@@ -28,6 +28,7 @@
     <string name="label_recent_updates">Updates</string>
     <string name="label_upcoming">Upcoming</string>
     <string name="label_recent_manga">History</string>
+    <string name="label_recommendations">Recommendations</string>
     <string name="label_sources">Sources</string>
     <string name="label_backup">Backup and restore</string>
     <string name="label_data_storage">Data and storage</string>
@@ -36,7 +37,6 @@
     <string name="label_extensions">Extensions</string>
     <string name="label_extension_info">Extension info</string>
     <string name="label_help">Help</string>
-    <string name="label_support_us">Support Us</string>
     <string name="label_default">Default</string>
     <string name="label_warning">Warning</string>
     <string name="label_auto">Auto</string>
@@ -116,6 +116,7 @@
     <string name="action_open_in_web_view">Open in WebView</string>
     <string name="action_web_view" translatable="false">WebView</string>
     <string name="action_migrate">Migrate</string>
+    <string name="action_similar_manga">Similar works</string>
     <string name="action_display_mode">Display mode</string>
     <string name="action_display">Display</string>
     <string name="action_display_grid">Compact grid</string>
@@ -134,6 +135,9 @@
     <string name="action_unpin">Unpin</string>
     <string name="action_apply">Apply</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
+    <string name="auto_scroll">Auto-scroll</string>
+    <string name="auto_scroll_speed_value">Speed: %1$d dp/s</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel_all">Cancel all</string>
     <string name="cancel_all_for_series">Cancel all for this series</string>
@@ -201,6 +205,20 @@
     <string name="onboarding_permission_action_grant">Grant</string>
     <string name="onboarding_guides_new_user">New to %s? We recommend checking out the getting started guide.</string>
     <string name="onboarding_guides_returning_user">Reinstalling %s?</string>
+    <string name="onboarding_yomudoom_features_title">YomuDoom features</string>
+    <string name="onboarding_yomudoom_features_description">Discover the features that make your reading faster and more personal.</string>
+    <string name="onboarding_yomudoom_feature_fast_startup_title">Faster startup</string>
+    <string name="onboarding_yomudoom_feature_fast_startup_description">Sources appear as extensions finish loading, so you can start using the app without waiting for everything to finish.</string>
+    <string name="onboarding_yomudoom_feature_search_title">Global search</string>
+    <string name="onboarding_yomudoom_feature_search_description">Use Legacy search to check sources one at a time or Consolidated search to combine results. From consolidated results, you can change the source and adjust the chapter order when needed.</string>
+    <string name="onboarding_yomudoom_feature_similar_title">Similar works</string>
+    <string name="onboarding_yomudoom_feature_similar_description">Open a manga, tap the three-dot menu, and choose Similar works. YomuDoom checks enabled sources and ranks results by similarity.</string>
+    <string name="onboarding_yomudoom_feature_recommendations_title">Recommendations</string>
+    <string name="onboarding_yomudoom_feature_recommendations_description">Open the Recommendations tab on Home. Suggestions use your history, favorites, and library.</string>
+    <string name="onboarding_yomudoom_feature_autoscroll_title">Webtoon auto-scroll</string>
+    <string name="onboarding_yomudoom_feature_autoscroll_description">In the Webtoon reader, use the auto-scroll button in the bottom menu to start or pause. The speed can be adjusted and is saved for your next reading session.</string>
+    <string name="onboarding_yomudoom_feature_library_sort_title">Smart chapter order</string>
+    <string name="onboarding_yomudoom_feature_library_sort_description">When you open a manga from your Library, chapters are ordered around the point where you stopped reading. Your manual manga preference is still respected.</string>
 
     <!-- Preferences -->
       <!-- Subsections -->
@@ -753,6 +771,17 @@
     <string name="copied_to_clipboard">Copied to clipboard:\n%1$s</string>
     <string name="clipboard_copy_error">Failed to copy to clipboard</string>
     <string name="source_not_installed">Source not installed: %1$s</string>
+    <string name="similar_manga">Similar works</string>
+    <string name="similar_manga_progress">Searching sources (%1$d/%2$d)</string>
+    <string name="similar_manga_no_results">No similar works found</string>
+    <string name="similar_manga_relevance">Relevance: %1$d%%</string>
+    <string name="similar_manga_slow_title">This search may take a while</string>
+    <string name="similar_manga_slow_message">YomuDoom will query multiple online sources and load their metadata. The process may take a few minutes.</string>
+    <string name="recommendations_progress">Building recommendations (%1$d/%2$d)</string>
+    <string name="recommendations_based_on">Based on %1$d works from your reading history</string>
+    <string name="recommendations_no_history">Read some works first to receive recommendations</string>
+    <string name="recommendations_no_results">No recommendations found</string>
+    <string name="recommendations_relevance">Relevance: %1$d%%</string>
     <string name="snack_add_to_library">Add to library?</string>
     <string name="description_placeholder">No description</string>
 
@@ -942,7 +971,7 @@
     <string name="learn_more">Tap to learn more</string>
     <string name="notification_cover_update_failed">Failed to update cover</string>
     <string name="notification_first_add_to_library">Please add the entry to your library before doing this</string>
-    <string name="library_errors_help">For help on how to fix library update errors, see %1$s</string>
+    <string name="library_errors_help">The YomuDoom guide for library update errors will be available in a future release.</string>
     <string name="skipped_reason_completed">Skipped because series is complete</string>
     <string name="skipped_reason_not_caught_up">Skipped because there are unread chapters</string>
     <string name="skipped_reason_not_started">Skipped because no chapters are read</string>
@@ -1066,17 +1095,4 @@
     <string name="migrationListScreen.progressDialog.cancelLabel">Cancel</string>
     <string name="migrationListScreen.matchWithoutChapterToast">No chapters found, this entry cannot be used for migration</string>
 
-    <string name="supportUsScreen.perks">Patrons get access to exclusive channels, with more perks to come.</string>
-    <string name="supportUsScreen.donationPlatform.patreon">Patreon (preferred)</string>
-    <string name="supportUsScreen.donationPlatform.opencollective">OpenCollective</string>
-    <string name="supportUsScreen.currentlySupportedBy">Mihon is currently backed by %d+ patrons. We want to thank each and everyone of you. Let's make Mihon even better together.</string>
-    <string name="supportUsScreen.contactForDetailsMessage">For alternative options or any related questions, join our Discord server.</string>
-    <string name="supportUsScreen.contactPlatform">Discord</string>
-
-    <string name="donationCampaign.title">Enjoying the app?</string>
-    <string name="donationCampaign.paragraph1">Hi! I’m the main developer behind Mihon, and I’d like to ask you to consider supporting its development financially. With enough support, I’ll be able to work on Mihon full-time and focus on long-standing issues as well as highly requested features.</string>
-    <string name="donationCampaign.paragraph2">You can donate through either Patreon (preferred) or OpenCollective. If you have questions or would like to support using alternative methods, feel free to reach out to me through Mihon's Discord server.</string>
-    <string name="donationCampaign.paragraph3">Regardless, Mihon will continue to be maintained by me and the volunteers, and it will stay open source.</string>
-    <string name="donationCampaign.contactPlatform">Discord</string>
-    <string name="donationCampaign.dismiss">Dismiss</string>
 </resources>

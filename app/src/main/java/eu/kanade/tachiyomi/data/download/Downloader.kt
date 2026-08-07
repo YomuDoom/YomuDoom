@@ -308,7 +308,6 @@ class Downloader(
                             context.stringResource(MR.strings.app_name),
                         ),
                         WARNING_NOTIF_TIMEOUT_MS,
-                        NotificationHandler.openUrl(context, LibraryUpdateNotifier.HELP_WARNING_URL),
                     )
                 }
                 DownloadJob.start(context)

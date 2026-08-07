@@ -157,6 +157,11 @@ class ReaderPreferences(
         false,
     )
 
+    val autoScrollSpeedDpPerSecond: Preference<Int> = preferenceStore.getInt(
+        "reader_auto_scroll_speed_dp_per_second",
+        60,
+    )
+
     val navigationModePager: Preference<Int> = preferenceStore.getInt("reader_navigation_mode_pager", 0)
 
     val navigationModeWebtoon: Preference<Int> = preferenceStore.getInt("reader_navigation_mode_webtoon", 0)

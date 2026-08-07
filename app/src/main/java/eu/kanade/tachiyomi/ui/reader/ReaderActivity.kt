@@ -49,6 +49,7 @@ import com.google.android.material.transition.platform.MaterialContainerTransfor
 import com.hippo.unifile.UniFile
 import eu.kanade.core.util.ifSourcesLoaded
 import eu.kanade.domain.base.BasePreferences
+import eu.kanade.presentation.reader.AutoScrollDialog
 import eu.kanade.presentation.reader.DisplayRefreshHost
 import eu.kanade.presentation.reader.OrientationSelectDialog
 import eu.kanade.presentation.reader.ReaderContentOverlay
@@ -78,6 +79,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
+import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.isNightMode
 import eu.kanade.tachiyomi.util.system.openInBrowser
@@ -105,6 +107,9 @@ import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.ByteArrayOutputStream
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlin.time.Duration.Companion.seconds
 
 class ReaderActivity : BaseActivity() {
@@ -135,6 +140,9 @@ class ReaderActivity : BaseActivity() {
     private var menuToggleToast: Toast? = null
     private var readingModeToast: Toast? = null
     private val displayRefreshHost = DisplayRefreshHost()
+    private var showAutoScrollDialog by mutableStateOf(false)
+    private var autoScrollRunning by mutableStateOf(false)
+    private var autoScrollSpeed by mutableIntStateOf(readerPreferences.autoScrollSpeedDpPerSecond.get())
 
     private val windowInsetsController by lazy { WindowInsetsControllerCompat(window, window.decorView) }
 
@@ -333,6 +341,14 @@ class ReaderActivity : BaseActivity() {
             }
             null -> {}
         }
+
+        if (showAutoScrollDialog) {
+            AutoScrollDialog(
+                speedDpPerSecond = autoScrollSpeed,
+                onDismissRequest = { showAutoScrollDialog = false },
+                onConfirm = ::startAutoScroll,
+            )
+        }
     }
 
     /**
@@ -340,6 +356,7 @@ class ReaderActivity : BaseActivity() {
      */
     override fun onDestroy() {
         super.onDestroy()
+        stopAutoScroll()
         viewModel.state.value.viewer?.destroy()
         config = null
         menuToggleToast?.cancel()
@@ -347,6 +364,7 @@ class ReaderActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        stopAutoScroll()
         lifecycleScope.launchNonCancellable {
             viewModel.updateHistory()
         }
@@ -515,6 +533,9 @@ class ReaderActivity : BaseActivity() {
                 menuToggleToast?.cancel()
                 menuToggleToast = toast(if (enabled) MR.strings.on else MR.strings.off)
             },
+            autoScrollAvailable = state.viewer is WebtoonViewer,
+            autoScrollRunning = autoScrollRunning,
+            onClickAutoScroll = ::toggleAutoScroll,
             onClickSettings = viewModel::openSettingsDialog,
         )
     }
@@ -535,8 +556,13 @@ class ReaderActivity : BaseActivity() {
      * Called from the presenter when a manga is ready. Used to instantiate the appropriate viewer.
      */
     private fun updateViewer() {
+        stopAutoScroll()
         val prevViewer = viewModel.state.value.viewer
         val newViewer = ReadingMode.toViewer(viewModel.getMangaReadingMode(), this)
+
+        (newViewer as? WebtoonViewer)?.autoScrollStateChangedListener = { running ->
+            autoScrollRunning = running
+        }
 
         if (window.sharedElementEnterTransition is MaterialContainerTransform) {
             // Wait until transition is complete to avoid crash on API 26
@@ -549,6 +575,7 @@ class ReaderActivity : BaseActivity() {
 
         // Destroy previous viewer if there was one
         if (prevViewer != null) {
+            (prevViewer as? WebtoonViewer)?.autoScrollStateChangedListener = null
             prevViewer.destroy()
             binding.viewerContainer.removeAllViews()
         }
@@ -564,6 +591,28 @@ class ReaderActivity : BaseActivity() {
         binding.readerContainer.addView(loadingIndicator)
 
         startPostponedEnterTransition()
+    }
+
+    private fun toggleAutoScroll() {
+        if (autoScrollRunning) {
+            stopAutoScroll()
+        } else if (viewModel.state.value.viewer is WebtoonViewer) {
+            autoScrollSpeed = readerPreferences.autoScrollSpeedDpPerSecond.get()
+            showAutoScrollDialog = true
+        }
+    }
+
+    private fun startAutoScroll(speedDpPerSecond: Int) {
+        autoScrollSpeed = speedDpPerSecond
+        readerPreferences.autoScrollSpeedDpPerSecond.set(speedDpPerSecond)
+        showAutoScrollDialog = false
+        (viewModel.state.value.viewer as? WebtoonViewer)?.startAutoScroll(speedDpPerSecond)
+    }
+
+    private fun stopAutoScroll() {
+        showAutoScrollDialog = false
+        (viewModel.state.value.viewer as? WebtoonViewer)?.stopAutoScroll()
+        autoScrollRunning = false
     }
 
     private fun openMangaScreen() {

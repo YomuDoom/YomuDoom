@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.SnackbarDuration
@@ -44,8 +43,6 @@ fun BrowseSourceContent(
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
     onWebViewClick: () -> Unit,
-    onHelpClick: () -> Unit,
-    onLocalSourceHelpClick: () -> Unit,
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
 ) {
@@ -85,13 +82,7 @@ fun BrowseSourceContent(
                 else -> stringResource(MR.strings.no_results_found)
             },
             actions = if (source is LocalSource) {
-                listOf(
-                    EmptyScreenAction(
-                        stringRes = MR.strings.local_source_help_guide,
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        onClick = onLocalSourceHelpClick,
-                    ),
-                )
+                emptyList()
             } else {
                 listOf(
                     EmptyScreenAction(
@@ -103,11 +94,6 @@ fun BrowseSourceContent(
                         stringRes = MR.strings.action_open_in_web_view,
                         icon = Icons.Outlined.Public,
                         onClick = onWebViewClick,
-                    ),
-                    EmptyScreenAction(
-                        stringRes = MR.strings.label_help,
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        onClick = onHelpClick,
                     ),
                 )
             },

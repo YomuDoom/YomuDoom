@@ -3,7 +3,6 @@ package eu.kanade.presentation.library.components
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FlipToBack
 import androidx.compose.material.icons.outlined.SelectAll
@@ -37,7 +36,6 @@ fun LibraryToolbar(
     onClickRefresh: () -> Unit,
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
-    onClickContinueReading: () -> Unit,
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
@@ -57,7 +55,6 @@ fun LibraryToolbar(
         onClickRefresh = onClickRefresh,
         onClickGlobalUpdate = onClickGlobalUpdate,
         onClickOpenRandomManga = onClickOpenRandomManga,
-        onClickContinueReading = onClickContinueReading,
         scrollBehavior = scrollBehavior,
     )
 }
@@ -72,7 +69,6 @@ private fun LibraryRegularToolbar(
     onClickRefresh: () -> Unit,
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
-    onClickContinueReading: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
 ) {
     val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
@@ -100,11 +96,6 @@ private fun LibraryRegularToolbar(
             val filterTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current
             AppBarActions(
                 listOf(
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_resume),
-                        icon = Icons.Filled.PlayArrow,
-                        onClick = onClickContinueReading,
-                    ),
                     AppBar.Action(
                         title = stringResource(MR.strings.action_filter),
                         icon = Icons.Outlined.FilterList,

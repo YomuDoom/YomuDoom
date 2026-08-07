@@ -51,11 +51,11 @@ class GetApplicationRelease(
         // Removes prefixes like "r" or "v"
         val newVersion = versionTag.replace("[^\\d.]".toRegex(), "")
         return if (isPreview) {
-            // Preview builds: based on releases in "mihonapp/mihon-preview" repo
+            // Preview builds use the YomuDoom GitHub repository and include prereleases.
             // tagged as something like "r1234"
             newVersion.toInt() > commitCount
         } else {
-            // Release builds: based on releases in "mihonapp/mihon" repo
+            // Release builds use the latest stable YomuDoom release.
             // tagged as something like "v0.1.2"
             val oldVersion = versionName.replace("[^\\d.]".toRegex(), "")
 

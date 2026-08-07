@@ -5,8 +5,12 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -19,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.util.fastAll
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
@@ -33,7 +37,6 @@ import eu.kanade.presentation.library.LibrarySettingsDialog
 import eu.kanade.presentation.library.components.LibraryContent
 import eu.kanade.presentation.library.components.LibraryToolbar
 import eu.kanade.presentation.manga.components.LibraryBottomActionMenu
-import eu.kanade.presentation.more.onboarding.GETTING_STARTED_URL
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
@@ -56,7 +59,6 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
-import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.isLocal
 
@@ -90,6 +92,22 @@ data object LibraryTab : Tab {
         val state by screenModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }
+
+        val onClickContinueReading = {
+            scope.launchIO {
+                val history = screenModel.getLastReadHistory()
+                if (history != null) {
+                    context.startActivity(
+                        ReaderActivity.newIntent(context, history.mangaId, history.chapterId),
+                    )
+                } else {
+                    snackbarHostState.showSnackbar(
+                        context.stringResource(MR.strings.information_no_recent_manga),
+                    )
+                }
+            }
+            Unit
+        }
 
         val onClickRefresh: (Category?) -> Boolean = { category ->
             val started = LibraryUpdateJob.startNow(context, category)
@@ -133,25 +151,27 @@ data object LibraryTab : Tab {
                             }
                         }
                     },
-                    onClickContinueReading = {
-                        scope.launchIO {
-                            val history = screenModel.getLastReadHistory()
-                            if (history != null) {
-                                context.startActivity(
-                                    ReaderActivity.newIntent(context, history.mangaId, history.chapterId),
-                                )
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    context.stringResource(MR.strings.information_no_recent_manga),
-                                )
-                            }
-                        }
-                    },
                     searchQuery = state.searchQuery,
                     onSearchQueryChange = screenModel::search,
                     // For scroll overlay when no tab
                     scrollBehavior = scrollBehavior.takeIf { !state.showCategoryTabs },
                 )
+            },
+            floatingActionButton = {
+                if (state.selection.isEmpty()) {
+                    FloatingActionButton(
+                        modifier = Modifier.size(75.dp),
+                        onClick = onClickContinueReading,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            modifier = Modifier.size(40.dp),
+                            contentDescription = context.stringResource(MR.strings.action_resume),
+                        )
+                    }
+                }
             },
             bottomBar = {
                 LibraryBottomActionMenu(
@@ -176,17 +196,9 @@ data object LibraryTab : Tab {
                     LoadingScreen(Modifier.padding(contentPadding))
                 }
                 state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
-                    val handler = LocalUriHandler.current
                     EmptyScreen(
                         stringRes = MR.strings.information_empty_library,
                         modifier = Modifier.padding(contentPadding),
-                        actions = listOf(
-                            EmptyScreenAction(
-                                stringRes = MR.strings.getting_started_guide,
-                                icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                                onClick = { handler.openUri(GETTING_STARTED_URL) },
-                            ),
-                        ),
                     )
                 }
                 else -> {
@@ -199,7 +211,7 @@ data object LibraryTab : Tab {
                         hasActiveFilters = state.hasActiveFilters,
                         showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
                         onChangeCurrentPage = screenModel::updateActiveCategoryIndex,
-                        onClickManga = { navigator.push(MangaScreen(it)) },
+                         onClickManga = { navigator.push(MangaScreen(it, fromLibrary = true)) },
                         onContinueReadingClicked = { it: LibraryManga ->
                             scope.launchIO {
                                 val chapter = screenModel.getNextUnreadChapter(it.manga)

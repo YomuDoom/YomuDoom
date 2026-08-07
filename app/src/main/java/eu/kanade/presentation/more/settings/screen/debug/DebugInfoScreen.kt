@@ -73,10 +73,6 @@ class DebugInfoScreen : Screen() {
                     subtitle = AboutScreen.getVersionName(false),
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = "Build time",
-                    subtitle = AboutScreen.getFormattedBuildTime(),
-                ),
-                Preference.PreferenceItem.TextPreference(
                     title = "Installation ID",
                     subtitle = installationId,
                     widget = {

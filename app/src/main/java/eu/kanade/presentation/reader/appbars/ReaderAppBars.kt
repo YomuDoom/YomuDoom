@@ -69,6 +69,9 @@ fun ReaderAppBars(
     onClickOrientation: () -> Unit,
     cropEnabled: Boolean,
     onClickCropBorder: () -> Unit,
+    autoScrollAvailable: Boolean,
+    autoScrollRunning: Boolean,
+    onClickAutoScroll: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
     val backgroundColor = MaterialTheme.colorScheme
@@ -160,6 +163,9 @@ fun ReaderAppBars(
                     onClickOrientation = onClickOrientation,
                     cropEnabled = cropEnabled,
                     onClickCropBorder = onClickCropBorder,
+                    autoScrollAvailable = autoScrollAvailable,
+                    autoScrollRunning = autoScrollRunning,
+                    onClickAutoScroll = onClickAutoScroll,
                     onClickSettings = onClickSettings,
                 )
             }

@@ -31,10 +31,10 @@ android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-        applicationId = "app.mihon"
+        applicationId = "app.yomudoom"
 
-        versionCode = 31
-        versionName = "0.20.6"
+        versionCode = 41
+        versionName = "0.20.16"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
@@ -45,8 +45,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    if (System.getenv("MIHON_GITHUB_RELEASE").toBoolean()) {
-        val tempStoreFile = file(System.getenv("RUNNER_TEMP")).resolve("antsy.keystore")
+    if (System.getenv("YOMUDOOM_GITHUB_RELEASE").toBoolean()) {
+        val tempStoreFile = file(System.getenv("RUNNER_TEMP")).resolve("yomudoom.keystore")
 
         val storeFileBytes = System.getenv("storeFileBase64").let(Base64::decode)
         tempStoreFile.outputStream().use { it.write(storeFileBytes) }

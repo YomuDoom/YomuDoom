@@ -1,86 +1,87 @@
-<div align="center">
+# YomuDoom
 
-<a href="https://mihon.app">
-    <img src="./.github/assets/logo.png" alt="Mihon logo" title="Mihon logo" width="80"/>
-</a>
+## Português (Brasil)
 
-# Mihon [App](#)
+YomuDoom é um leitor Android de código aberto para mangás, webtoons e quadrinhos. O projeto é baseado no Mihon, com identidade própria, melhorias de busca, leitura e organização da biblioteca.
 
-### Full-featured reader
-Discover and read manga, webtoons, comics, and more – easier than ever on your Android device.
+### Funcionalidades do YomuDoom
 
-[![Discord server](https://img.shields.io/discord/1195734228319617024.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/mihon)
-[![GitHub downloads](https://img.shields.io/github/downloads/mihonapp/mihon/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://mihon.app/download)
+- Busca consolidada que prioriza a fonte instalada com mais capítulos.
+- Busca padrão ordenada da fonte com mais capítulos para a fonte com menos capítulos.
+- Obras semelhantes encontradas nas fontes habilitadas.
+- Recomendações baseadas no conteúdo da biblioteca e do histórico local.
+- Autoscroll configurável no leitor Webtoon.
+- Ordenação automática da Biblioteca.
+- Botão de continuar leitura em um FAB maior e temático.
+- Onboarding inicial com as principais funcionalidades do aplicativo.
+- Backup e restauração para migração entre instalações.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/mihonapp/mihon/build.yml?labelColor=27303D)](https://github.com/mihonapp/mihon/actions/workflows/build_push.yml)
-[![License: Apache-2.0](https://img.shields.io/github/license/mihonapp/mihon?labelColor=27303D&color=0877d2)](/LICENSE)
-[![Translation status](https://img.shields.io/weblate/progress/mihon?labelColor=27303D&color=946300)](https://hosted.weblate.org/engage/mihon/)
+### Download
 
-## Download
+Baixe a versão mais recente na página de [Releases](https://github.com/Marco-arch/YomuDoom/releases). O YomuDoom requer Android 8.0 ou superior.
 
-[![Mihon Stable](https://img.shields.io/github/release/mihonapp/mihon.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://mihon.app/download)
-[![Mihon Beta](https://img.shields.io/github/v/release/mihonapp/mihon-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://mihon.app/download)
+As versões Debug usam o pacote `app.yomudoom.dev`. As versões Release usam `app.yomudoom`.
 
-*Requires Android 8.0 or higher.*
+### Migração
 
-## Features
+O YomuDoom usa um pacote Android separado do aplicativo legado. Crie um backup no aplicativo antigo, instale o YomuDoom e restaure o backup em **Mais > Configurações > Dados e armazenamento**. Não desinstale o aplicativo antigo antes de confirmar que a restauração foi concluída.
 
-<div align="left">
+### Desenvolvimento
 
-* Local reading of content.
-* A configurable reader with multiple viewers, reading directions and other settings.
-* Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), [Bangumi](https://bgm.tv/) and [Hikka](https://hikka.io/) support.
-* Categories to organize your library.
-* Light and dark themes.
-* Schedule updating your library for new chapters.
-* Create backups locally to read offline or to your desired cloud service.
-* Plus much more...
+```text
+./gradlew :app:compileDebugKotlin
+./gradlew :app:installDebug
+```
 
-</div>
+Pull requests são bem-vindos. O código mantém a licença Apache 2.0 e a atribuição aos projetos originais utilizados como base.
 
-## Contributing
+### Aviso
 
-[Code of conduct](./CODE_OF_CONDUCT.md) · [Contributing guide](./CONTRIBUTING.md)
+O aplicativo não hospeda conteúdo e não possui afiliação com os provedores de conteúdo acessados por suas fontes.
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+### Licença
 
-Before reporting a new issue, take a look at the [FAQ](https://mihon.app/docs/faq/general), the [changelog](https://mihon.app/changelogs/) and the already opened [issues](https://github.com/mihonapp/mihon/issues); if you got any questions, join our [Discord server](https://discord.gg/mihon).
+Este projeto é distribuído sob a [Apache License 2.0](./LICENSE). Os direitos autorais e atribuições existentes no código-fonte original são preservados.
 
+## English
 
-### Repositories
+YomuDoom is an open-source Android reader for manga, webtoons, comics, and similar content. It is based on Mihon and adds its own identity together with search, reading, and library improvements.
 
-[![mihonapp/website - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=mihonapp&repo=website&bg_color=161B22&text_color=c9d1d9&title_color=0877d2&icon_color=0877d2&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/mihonapp/website/)
-[![mihonapp/bitmap.kt - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=mihonapp&repo=bitmap.kt&bg_color=161B22&text_color=c9d1d9&title_color=0877d2&icon_color=0877d2&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/mihonapp/bitmap.kt/)
+### YomuDoom Features
 
-### Credits
+- Consolidated search that prioritizes the installed source with the most chapters.
+- Standard search ordered from the source with the most chapters to the source with the fewest chapters.
+- Similar works found across enabled sources.
+- Recommendations based on local library and reading history data.
+- Configurable Webtoon auto-scroll.
+- Automatic library ordering.
+- A larger, themed continue-reading floating action button.
+- First-run onboarding for the main application features.
+- Backup and restore support for moving between installations.
 
-Thank you to all the people who have contributed!
+### Download
 
-<a href="https://github.com/mihonapp/mihon/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=mihonapp/mihon" alt="Mihon app contributors" title="Mihon app contributors" width="800"/>
-</a>
+Download the latest version from the [Releases](https://github.com/Marco-arch/YomuDoom/releases) page. YomuDoom requires Android 8.0 or newer.
+
+Debug builds use the `app.yomudoom.dev` package. Release builds use `app.yomudoom`.
+
+### Migration
+
+YomuDoom uses a separate Android package from the legacy application. Create a backup in the old application, install YomuDoom, and restore it from **More > Settings > Data and storage**. Do not uninstall the old application until the restore has been verified.
+
+### Development
+
+```text
+./gradlew :app:compileDebugKotlin
+./gradlew :app:installDebug
+```
+
+Pull requests are welcome. The code keeps the Apache 2.0 license and attribution for the original projects used as its foundation.
 
 ### Disclaimer
 
-The developer(s) of this application does not have any affiliation with the content providers available, and this application hosts zero content.
+The application hosts no content and is not affiliated with the content providers accessed through its sources.
 
 ### License
 
-<pre>
-Copyright © 2015 Javier Tomás
-Copyright © 2024 Mihon Open Source Project
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-</pre>
-
-</div>
+This project is distributed under the [Apache License 2.0](./LICENSE). Existing copyright notices and attributions in the original source code are preserved.

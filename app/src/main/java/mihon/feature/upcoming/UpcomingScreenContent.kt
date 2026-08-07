@@ -8,17 +8,14 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -28,7 +25,6 @@ import eu.kanade.presentation.util.isTabletUi
 import kotlinx.coroutines.launch
 import mihon.feature.upcoming.components.UpcomingItem
 import mihon.feature.upcoming.components.calendar.Calendar
-import tachiyomi.core.common.Constants
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -88,19 +84,9 @@ fun UpcomingScreenContent(
 @Composable
 private fun UpcomingToolbar() {
     val navigator = LocalNavigator.currentOrThrow
-    val uriHandler = LocalUriHandler.current
-
     AppBar(
         title = stringResource(MR.strings.label_upcoming),
         navigateUp = navigator::pop,
-        actions = {
-            IconButton(onClick = { uriHandler.openUri(Constants.URL_HELP_UPCOMING) }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                    contentDescription = stringResource(MR.strings.upcoming_guide),
-                )
-            }
-        },
     )
 }
 

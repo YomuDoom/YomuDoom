@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +47,7 @@ import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
+import eu.kanade.tachiyomi.ui.browse.source.similar.SimilarMangaScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.manga.notes.MangaNotesScreen
@@ -62,11 +66,14 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 class MangaScreen(
     private val mangaId: Long,
     val fromSource: Boolean = false,
+    val fromLibrary: Boolean = false,
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -84,9 +91,10 @@ class MangaScreen(
         val context = LocalContext.current
         val haptic = LocalHapticFeedback.current
         val scope = rememberCoroutineScope()
+        var showSimilarWarning by remember { mutableStateOf(false) }
         val lifecycleOwner = LocalLifecycleOwner.current
         val screenModel = rememberScreenModel {
-            MangaScreenModel(context, lifecycleOwner.lifecycle, mangaId, fromSource)
+            MangaScreenModel(context, lifecycleOwner.lifecycle, mangaId, fromSource, fromLibrary)
         }
 
         val state by screenModel.state.collectAsStateWithLifecycle()
@@ -161,6 +169,7 @@ class MangaScreen(
             onMigrateClicked = {
                 navigator.push(MigrationConfigScreen(successState.manga.id))
             }.takeIf { successState.manga.favorite },
+            onSimilarClicked = { showSimilarWarning = true },
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
             onMultiBookmarkClicked = screenModel::bookmarkChapters,
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
@@ -171,6 +180,29 @@ class MangaScreen(
             onAllChapterSelected = screenModel::toggleAllSelection,
             onInvertSelection = screenModel::invertSelection,
         )
+
+        if (showSimilarWarning) {
+            AlertDialog(
+                title = { Text(text = stringResource(MR.strings.similar_manga_slow_title)) },
+                text = { Text(text = stringResource(MR.strings.similar_manga_slow_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showSimilarWarning = false
+                            navigator.push(SimilarMangaScreen(successState.manga.id))
+                        },
+                    ) {
+                        Text(text = stringResource(MR.strings.action_continue))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSimilarWarning = false }) {
+                        Text(text = stringResource(MR.strings.action_cancel))
+                    }
+                },
+                onDismissRequest = { showSimilarWarning = false },
+            )
+        }
 
         var showScanlatorsDialog by remember { mutableStateOf(false) }
 

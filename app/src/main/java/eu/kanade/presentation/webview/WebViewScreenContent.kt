@@ -8,7 +8,6 @@ import android.webkit.JsResult
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.stack.mutableStateStackOf
@@ -92,7 +90,6 @@ fun WebViewScreenContent(
     val currentWindow = windowStack.lastItemOrNull!!
     val navigator = currentWindow.navigator
 
-    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
 
     var currentUrl by remember { mutableStateOf(url) }
@@ -292,13 +289,7 @@ fun WebViewScreenContent(
                         ) {
                             WarningBanner(
                                 textRes = MR.strings.information_cloudflare_help,
-                                modifier = Modifier
-                                    .clip(MaterialTheme.shapes.small)
-                                    .clickable {
-                                        uriHandler.openUri(
-                                            "https://mihon.app/docs/guides/troubleshooting/#cloudflare",
-                                        )
-                                    },
+                                modifier = Modifier.clip(MaterialTheme.shapes.small),
                             )
                         }
                     }

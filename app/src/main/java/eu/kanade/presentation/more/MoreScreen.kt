@@ -2,9 +2,7 @@ package eu.kanade.presentation.more
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
@@ -14,14 +12,12 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
-import tachiyomi.core.common.Constants
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -40,11 +36,8 @@ fun MoreScreen(
     onClickStats: () -> Unit,
     onClickDataAndStorage: () -> Unit,
     onClickSettings: () -> Unit,
-    onClickSupport: () -> Unit,
     onClickAbout: () -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
-
     Scaffold { contentPadding ->
         ScrollbarLazyColumn(contentPadding = contentPadding) {
             item {
@@ -135,23 +128,9 @@ fun MoreScreen(
             }
             item {
                 TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_support_us),
-                    icon = Icons.Default.VolunteerActivism,
-                    onPreferenceClick = onClickSupport,
-                )
-            }
-            item {
-                TextPreferenceWidget(
                     title = stringResource(MR.strings.pref_category_about),
                     icon = Icons.Outlined.Info,
                     onPreferenceClick = onClickAbout,
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_help),
-                    icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                    onPreferenceClick = { uriHandler.openUri(Constants.URL_HELP) },
                 )
             }
         }

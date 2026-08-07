@@ -42,6 +42,7 @@ import eu.kanade.tachiyomi.ui.history.HistoryTab
 import eu.kanade.tachiyomi.ui.library.LibraryTab
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.more.MoreTab
+import eu.kanade.tachiyomi.ui.recommendations.RecommendationsTab
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -70,6 +71,7 @@ object HomeScreen : Screen() {
         LibraryTab,
         UpdatesTab,
         HistoryTab,
+        RecommendationsTab,
         BrowseTab,
         MoreTab,
     )
@@ -142,6 +144,7 @@ object HomeScreen : Screen() {
                             is Tab.Library -> LibraryTab
                             Tab.Updates -> UpdatesTab
                             Tab.History -> HistoryTab
+                            Tab.Recommendations -> RecommendationsTab
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
                                     BrowseTab.showExtension()
@@ -322,6 +325,7 @@ object HomeScreen : Screen() {
         data class Library(val mangaIdToOpen: Long? = null) : Tab
         data object Updates : Tab
         data object History : Tab
+        data object Recommendations : Tab
         data class Browse(val toExtensions: Boolean = false) : Tab
         data class More(val toDownloads: Boolean) : Tab
     }
