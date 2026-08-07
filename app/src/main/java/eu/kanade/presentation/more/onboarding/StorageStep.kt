@@ -64,7 +64,6 @@ internal class StorageStep : OnboardingStep {
             ) {
                 Text(stringResource(MR.strings.onboarding_storage_action_select))
             }
-
         }
 
         LaunchedEffect(Unit) {

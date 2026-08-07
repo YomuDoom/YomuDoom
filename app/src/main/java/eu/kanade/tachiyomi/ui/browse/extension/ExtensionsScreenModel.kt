@@ -162,7 +162,8 @@ class ExtensionsScreenModel(
             .filterNot { it.equals("multi", ignoreCase = true) }
             .distinct()
             .sortedWith(LocaleHelper.comparator)
-        val systemLanguage = LocaleListCompat.getAdjustedDefault()[0]?.language ?: java.util.Locale.getDefault().language
+        val systemLanguage =
+            LocaleListCompat.getAdjustedDefault()[0]?.language ?: java.util.Locale.getDefault().language
         val defaultSelected = languages
             .filter { it == systemLanguage || it.startsWith("$systemLanguage-") }
             .toSet()
@@ -300,37 +301,40 @@ class ExtensionsScreenModel(
                     mode = InstallMode.All,
                 ),
             )
-            BulkActionType.Update -> extensionManager.installedExtensionsFlow.value
-                .filter { it.hasUpdate }
-                .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
-                .map {
-                    BulkActionItem(
-                        extension = it,
-                        installed = true,
-                        eligible = true,
-                        selected = false,
-                    )
-                }
-            BulkActionType.Uninstall -> extensionManager.installedExtensionsFlow.value
-                .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
-                .map {
-                    BulkActionItem(
-                        extension = it,
-                        installed = true,
-                        eligible = true,
-                        selected = false,
-                    )
-                }
-            BulkActionType.Trust -> extensionManager.untrustedExtensionsFlow.value
-                .sortedWith(compareBy<Extension.Untrusted> { it.lang }.thenBy { it.name })
-                .map {
-                    BulkActionItem(
-                        extension = it,
-                        installed = false,
-                        eligible = true,
-                        selected = false,
-                    )
-                }
+            BulkActionType.Update ->
+                extensionManager.installedExtensionsFlow.value
+                    .filter { it.hasUpdate }
+                    .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
+                    .map {
+                        BulkActionItem(
+                            extension = it,
+                            installed = true,
+                            eligible = true,
+                            selected = false,
+                        )
+                    }
+            BulkActionType.Uninstall ->
+                extensionManager.installedExtensionsFlow.value
+                    .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
+                    .map {
+                        BulkActionItem(
+                            extension = it,
+                            installed = true,
+                            eligible = true,
+                            selected = false,
+                        )
+                    }
+            BulkActionType.Trust ->
+                extensionManager.untrustedExtensionsFlow.value
+                    .sortedWith(compareBy<Extension.Untrusted> { it.lang }.thenBy { it.name })
+                    .map {
+                        BulkActionItem(
+                            extension = it,
+                            installed = false,
+                            eligible = true,
+                            selected = false,
+                        )
+                    }
         }
 
         if (items.isEmpty()) return

@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,15 +26,15 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,13 +60,13 @@ import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.InstallStep
-import eu.kanade.tachiyomi.ui.browse.extension.InstallDialogState
 import eu.kanade.tachiyomi.ui.browse.extension.BulkActionDialogState
-import eu.kanade.tachiyomi.ui.browse.extension.BulkActionType
 import eu.kanade.tachiyomi.ui.browse.extension.BulkActionItem
-import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
+import eu.kanade.tachiyomi.ui.browse.extension.BulkActionType
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionUiModel
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.extension.InstallDialogState
+import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import tachiyomi.i18n.MR
@@ -294,7 +294,6 @@ private fun ExtensionContent(
             },
         )
     }
-
 }
 
 @Composable
@@ -732,7 +731,11 @@ fun ExtensionBulkActionDialog(
                             leadingContent = {
                                 Checkbox(
                                     checked = item.selected,
-                                    onCheckedChange = if (item.eligible) { { onToggleItem(item.extension.pkgName) } } else null,
+                                    onCheckedChange = if (item.eligible) {
+                                        { onToggleItem(item.extension.pkgName) }
+                                    } else {
+                                        null
+                                    },
                                 )
                             },
                             content = {

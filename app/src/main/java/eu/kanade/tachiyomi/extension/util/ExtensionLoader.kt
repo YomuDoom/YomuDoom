@@ -16,11 +16,11 @@ import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
 import kotlinx.coroutines.CancellationException
-import tachiyomi.core.common.util.lang.withIOContext
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import logcat.LogPriority
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
@@ -263,104 +263,103 @@ internal object ExtensionLoader {
         val pkgName = pkgInfo.packageName
 
         return try {
+            val extName = appInfo.metaData.getString(METADATA_NAME)
+                ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tachiyomi: ")
+            val versionName = pkgInfo.versionName
+            val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
-        val extName = appInfo.metaData.getString(METADATA_NAME)
-            ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tachiyomi: ")
-        val versionName = pkgInfo.versionName
-        val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
-
-        if (versionName.isNullOrEmpty()) {
-            logcat(LogPriority.WARN) { "Missing versionName for extension $extName" }
-            return LoadResult.Error
-        }
-
-        // Validate lib version
-        val libVersion = appInfo.metaData.getString(METADATA_EXTENSION_LIB)?.toDouble()
-            ?: versionName.substringBeforeLast('.').toDoubleOrNull()
-        if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
-            logcat(LogPriority.WARN) {
-                "Lib version is $libVersion, while only version(s) ${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
+            if (versionName.isNullOrEmpty()) {
+                logcat(LogPriority.WARN) { "Missing versionName for extension $extName" }
+                return LoadResult.Error
             }
-            return LoadResult.Error
-        }
 
-        val signatures = getSignatures(pkgInfo)
-        if (signatures.isNullOrEmpty()) {
-            logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
-            return LoadResult.Error
-        } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
-            val extension = Extension.Untrusted(
-                extName,
-                pkgName,
-                versionName,
-                versionCode,
-                libVersion,
-                signatures.last(),
-            )
-            logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
-            return LoadResult.Untrusted(extension)
-        }
-
-        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
-            appInfo.metaData.getInt(METADATA_NSFW) == 1
-        if (!loadNsfwSource && isNsfw) {
-            logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
-            return LoadResult.Error
-        }
-
-        val classLoader = try {
-            ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
-        } catch (throwable: Throwable) {
-            if (throwable is CancellationException) throw throwable
-            logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($pkgName)" }
-            return LoadResult.Error
-        }
-
-        val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
-            .split(";")
-            .map {
-                val sourceClass = it.trim()
-                if (sourceClass.startsWith(".")) {
-                    pkgInfo.packageName + sourceClass
-                } else {
-                    sourceClass
+            // Validate lib version
+            val libVersion = appInfo.metaData.getString(METADATA_EXTENSION_LIB)?.toDouble()
+                ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+            if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
+                logcat(LogPriority.WARN) {
+                    "Lib version is $libVersion, while only version(s) ${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
                 }
+                return LoadResult.Error
             }
-            .flatMap {
-                try {
-                    when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
-                        is Source -> listOf(obj)
-                        is SourceFactory -> obj.createSources()
-                        else -> throw Exception("Unknown source class type: ${obj.javaClass}")
+
+            val signatures = getSignatures(pkgInfo)
+            if (signatures.isNullOrEmpty()) {
+                logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
+                return LoadResult.Error
+            } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
+                val extension = Extension.Untrusted(
+                    extName,
+                    pkgName,
+                    versionName,
+                    versionCode,
+                    libVersion,
+                    signatures.last(),
+                )
+                logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
+                return LoadResult.Untrusted(extension)
+            }
+
+            val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
+                appInfo.metaData.getInt(METADATA_NSFW) == 1
+            if (!loadNsfwSource && isNsfw) {
+                logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
+                return LoadResult.Error
+            }
+
+            val classLoader = try {
+                ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($pkgName)" }
+                return LoadResult.Error
+            }
+
+            val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
+                .split(";")
+                .map {
+                    val sourceClass = it.trim()
+                    if (sourceClass.startsWith(".")) {
+                        pkgInfo.packageName + sourceClass
+                    } else {
+                        sourceClass
                     }
-                } catch (throwable: Throwable) {
-                    if (throwable is CancellationException) throw throwable
-                    logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($it)" }
-                    return LoadResult.Error
                 }
+                .flatMap {
+                    try {
+                        when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
+                            is Source -> listOf(obj)
+                            is SourceFactory -> obj.createSources()
+                            else -> throw Exception("Unknown source class type: ${obj.javaClass}")
+                        }
+                    } catch (throwable: Throwable) {
+                        if (throwable is CancellationException) throw throwable
+                        logcat(LogPriority.ERROR, throwable) { "Extension load error: $extName ($it)" }
+                        return LoadResult.Error
+                    }
+                }
+
+            val langs = sources.map { it.lang }.toSet()
+            val lang = when (langs.size) {
+                0 -> ""
+                1 -> langs.first()
+                else -> "all"
             }
 
-        val langs = sources.map { it.lang }.toSet()
-        val lang = when (langs.size) {
-            0 -> ""
-            1 -> langs.first()
-            else -> "all"
-        }
-
-        val extension = Extension.Installed(
-            name = extName,
-            pkgName = pkgName,
-            versionName = versionName,
-            versionCode = versionCode,
-            libVersion = libVersion,
-            lang = lang,
-            isNsfw = isNsfw,
-            sources = sources,
-            pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
-            icon = appInfo.loadIcon(pkgManager),
-            isShared = extensionInfo.isShared,
-        )
-        LoadResult.Success(extension)
+            val extension = Extension.Installed(
+                name = extName,
+                pkgName = pkgName,
+                versionName = versionName,
+                versionCode = versionCode,
+                libVersion = libVersion,
+                lang = lang,
+                isNsfw = isNsfw,
+                sources = sources,
+                pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
+                icon = appInfo.loadIcon(pkgManager),
+                isShared = extensionInfo.isShared,
+            )
+            LoadResult.Success(extension)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             logcat(LogPriority.ERROR, throwable) { "Extension load error: $pkgName" }

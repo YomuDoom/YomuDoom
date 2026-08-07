@@ -62,7 +62,6 @@ object AboutScreen : Screen() {
                         onPreferenceClick = { navigator.push(OpenSourceLicensesScreen()) },
                     )
                 }
-
             }
         }
     }

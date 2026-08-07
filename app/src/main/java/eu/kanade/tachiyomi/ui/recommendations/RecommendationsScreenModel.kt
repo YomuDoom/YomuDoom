@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.ui.recommendations
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.State as ComposeState
 import androidx.compose.runtime.rememberUpdatedState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -26,6 +25,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.math.min
 import kotlin.math.roundToInt
+import androidx.compose.runtime.State as ComposeState
 
 class RecommendationsScreenModel(
     private val sourcePreferences: SourcePreferences = Injekt.get(),

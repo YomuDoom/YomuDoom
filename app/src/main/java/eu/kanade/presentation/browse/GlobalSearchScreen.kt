@@ -9,12 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import eu.kanade.domain.source.service.GlobalSearchMode
+import eu.kanade.presentation.browse.components.ConsolidatedSourceMenu
 import eu.kanade.presentation.browse.components.GlobalSearchCardRow
 import eu.kanade.presentation.browse.components.GlobalSearchErrorResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchToolbar
-import eu.kanade.presentation.browse.components.ConsolidatedSourceMenu
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.ConsolidatedSearchResult
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SearchItemResult

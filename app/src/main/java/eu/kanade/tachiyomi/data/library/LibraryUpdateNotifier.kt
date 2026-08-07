@@ -133,7 +133,7 @@ class LibraryUpdateNotifier(
             )
             setSmallIcon(R.drawable.ic_warning_white_24dp)
             setTimeoutAfter(Downloader.WARNING_NOTIF_TIMEOUT_MS)
-             setContentIntent(getNotificationIntent())
+            setContentIntent(getNotificationIntent())
         }
     }
 

@@ -1,8 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.source.similar
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State as ComposeState
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.rememberUpdatedState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -20,6 +19,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import androidx.compose.runtime.State as ComposeState
 
 class SimilarMangaScreenModel(
     private val mangaId: Long,
@@ -126,7 +126,7 @@ class SimilarMangaScreenModel(
     }
 
     private fun isSameWork(reference: Manga, candidate: Manga): Boolean {
-        return reference.source == candidate.source && reference.url == candidate.url ||
+        return (reference.source == candidate.source && reference.url == candidate.url) ||
             SimilarMangaScorer.normalize(reference.title) == SimilarMangaScorer.normalize(candidate.title)
     }
 

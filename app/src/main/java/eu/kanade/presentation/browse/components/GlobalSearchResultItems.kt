@@ -95,7 +95,11 @@ fun ConsolidatedSourceMenu(
             onDismissRequest = { expanded = false },
         ) {
             candidates
-                .sortedWith(compareByDescending<ConsolidatedSearchCandidate> { it.chapterCount }.thenBy { it.source.name })
+                .sortedWith(
+                    compareByDescending<ConsolidatedSearchCandidate> {
+                        it.chapterCount
+                    }.thenBy { it.source.name },
+                )
                 .forEach { candidate ->
                     DropdownMenuItem(
                         text = {

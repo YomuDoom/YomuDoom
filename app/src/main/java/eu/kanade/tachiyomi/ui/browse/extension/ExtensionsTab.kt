@@ -13,9 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.presentation.browse.ExtensionScreen
-import eu.kanade.presentation.browse.ExtensionInstallDialog
 import eu.kanade.presentation.browse.ExtensionBulkActionDialog
+import eu.kanade.presentation.browse.ExtensionInstallDialog
+import eu.kanade.presentation.browse.ExtensionScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
@@ -47,19 +47,25 @@ fun extensionsTab(
                     title = stringResource(MR.strings.ext_update_all),
                     onClick = { extensionsScreenModel.updateAllExtensions() },
                 )
-            } else null,
+            } else {
+                null
+            },
             if (state.items.values.flatten().any { it.extension is Extension.Untrusted }) {
                 AppBar.OverflowAction(
                     title = stringResource(MR.strings.ext_trust_all),
                     onClick = { extensionsScreenModel.trustAllExtensions() },
                 )
-            } else null,
+            } else {
+                null
+            },
             if (state.items.values.flatten().any { it.extension is Extension.Installed }) {
                 AppBar.OverflowAction(
                     title = stringResource(MR.strings.ext_uninstall_all),
                     onClick = { extensionsScreenModel.uninstallAllExtensions() },
                 )
-            } else null,
+            } else {
+                null
+            },
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.ext_install_extensions),
                 onClick = { extensionsScreenModel.showInstallDialog() },
@@ -148,7 +154,6 @@ fun extensionsTab(
                     },
                 )
             }
-
         },
     )
 }
