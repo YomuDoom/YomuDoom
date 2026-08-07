@@ -9,12 +9,17 @@ build
 # IDE files
 *.iml
 .idea/*
-!.idea/icon.svg
 /captures
 
 # Configuration files
 keystore.properties
 local.properties
+
+# Local project memory and personal helpers
+PROJECT_CONTEXT.md
+__pycache__/
+*.pyc
+send_apk_whatsapp.py
 
 # macOS specific files
 .DS_Store
