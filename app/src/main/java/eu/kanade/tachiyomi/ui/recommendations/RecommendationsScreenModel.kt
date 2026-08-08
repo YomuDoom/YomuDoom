@@ -55,6 +55,15 @@ class RecommendationsScreenModel(
         }
     }
 
+    fun refreshRecommendations() {
+        if (state.value.isLoading) return
+
+        mutableState.update { State(isLoading = true) }
+        screenModelScope.launch {
+            loadRecommendations()
+        }
+    }
+
     @Composable
     fun getManga(initialManga: Manga): ComposeState<Manga> {
         return rememberUpdatedState(initialManga)

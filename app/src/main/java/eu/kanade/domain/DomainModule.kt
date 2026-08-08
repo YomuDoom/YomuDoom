@@ -22,6 +22,7 @@ import eu.kanade.domain.source.interactor.ToggleIncognito
 import eu.kanade.domain.source.interactor.ToggleLanguage
 import eu.kanade.domain.source.interactor.ToggleSource
 import eu.kanade.domain.source.interactor.ToggleSourcePin
+import eu.kanade.domain.source.service.NsfwContentFilter
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.track.interactor.RefreshTracks
 import eu.kanade.domain.track.interactor.SyncChapterProgressWithTrack
@@ -177,6 +178,7 @@ class DomainModule : InjektModule {
 
         addFactory { DeleteDownload(get(), get()) }
 
+        addFactory { NsfwContentFilter(get(), get()) }
         addFactory { GetExtensionsByType(get(), get()) }
         addFactory { GetExtensionSources(get()) }
         addFactory { GetExtensionLanguages(get(), get()) }

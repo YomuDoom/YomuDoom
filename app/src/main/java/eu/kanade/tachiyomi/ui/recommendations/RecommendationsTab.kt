@@ -41,6 +41,7 @@ data object RecommendationsTab : Tab {
         RecommendationsScreen(
             state = state,
             navigateUp = null,
+            onRefresh = screenModel::refreshRecommendations,
             onClickItem = { navigator.push(MangaScreen(it.id)) },
             getManga = screenModel::getManga,
         )

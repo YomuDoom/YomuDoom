@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +36,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 fun RecommendationsScreen(
     state: RecommendationsScreenModel.State,
     navigateUp: (() -> Unit)?,
+    onRefresh: () -> Unit,
     onClickItem: (Manga) -> Unit,
     getManga: @Composable (Manga) -> State<Manga>,
 ) {
@@ -41,6 +46,17 @@ fun RecommendationsScreen(
                 AppBar(
                     title = stringResource(MR.strings.label_recommendations),
                     navigateUp = navigateUp,
+                    actions = {
+                        IconButton(
+                            onClick = onRefresh,
+                            enabled = !state.isLoading,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = stringResource(MR.strings.action_webview_refresh),
+                            )
+                        }
+                    },
                 )
                 if (state.isLoading && state.totalSources > 0) {
                     LinearProgressIndicator(
