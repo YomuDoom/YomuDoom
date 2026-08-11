@@ -1,5 +1,10 @@
 # YomuDoom Changelog
 
+## 0.20.20
+
+- Added HyperOS-compatible permission detection through Android AppOps.
+- Kept onboarding permission checks synchronized while the step is visible.
+
 ## 0.20.19
 
 - Fixed onboarding permission checks not refreshing after returning from Android or HyperOS settings.

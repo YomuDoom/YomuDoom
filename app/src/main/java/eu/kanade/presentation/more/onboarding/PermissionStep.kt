@@ -22,11 +22,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,17 +33,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import eu.kanade.tachiyomi.util.system.telemetryIncluded
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -61,12 +58,10 @@ internal class PermissionStep : OnboardingStep {
     override fun Content() {
         val context = LocalContext.current
         val lifecycleOwner = LocalLifecycleOwner.current
-        val scope = rememberCoroutineScope()
 
         val installGranted = rememberRequestPackageInstallsPermissionState()
         var notificationGranted by remember { mutableStateOf(false) }
         var batteryGranted by remember { mutableStateOf(false) }
-        var refreshJob by remember { mutableStateOf<Job?>(null) }
 
         fun refreshPermissions() {
             notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -76,32 +71,12 @@ internal class PermissionStep : OnboardingStep {
                 ?.isIgnoringBatteryOptimizations(context.packageName) == true
         }
 
-        fun refreshPermissionsWithRetry() {
-            refreshPermissions()
-            refreshJob?.cancel()
-            refreshJob = scope.launch {
-                delay(300)
-                refreshPermissions()
-                delay(700)
-                refreshPermissions()
-            }
-        }
-
-        DisposableEffect(lifecycleOwner.lifecycle, context) {
-            refreshPermissionsWithRetry()
-            val observer = object : DefaultLifecycleObserver {
-                override fun onStart(owner: LifecycleOwner) {
-                    refreshPermissionsWithRetry()
+        LaunchedEffect(lifecycleOwner.lifecycle, context) {
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    refreshPermissions()
+                    delay(500)
                 }
-
-                override fun onResume(owner: LifecycleOwner) {
-                    refreshPermissionsWithRetry()
-                }
-            }
-            lifecycleOwner.lifecycle.addObserver(observer)
-            onDispose {
-                refreshJob?.cancel()
-                lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }
 
@@ -119,7 +94,7 @@ internal class PermissionStep : OnboardingStep {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = {
-                        refreshPermissionsWithRetry()
+                        refreshPermissions()
                     },
                 )
                 PermissionCheckbox(

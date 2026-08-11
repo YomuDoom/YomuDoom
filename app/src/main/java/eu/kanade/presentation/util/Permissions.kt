@@ -1,18 +1,33 @@
 package eu.kanade.presentation.util
 
+import android.app.AppOpsManager
+import android.content.Context
+import android.os.Process
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
+import androidx.core.content.getSystemService
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+
+fun Context.canRequestPackageInstallsCompat(): Boolean {
+    if (packageManager.canRequestPackageInstalls()) return true
+
+    val appOps = getSystemService<AppOpsManager>() ?: return false
+    return runCatching {
+        appOps.unsafeCheckOpNoThrow(
+            "android:request_install_packages",
+            Process.myUid(),
+            packageName,
+        ) == AppOpsManager.MODE_ALLOWED
+    }.getOrDefault(false)
+}
 
 @Composable
 fun rememberRequestPackageInstallsPermissionState(initialValue: Boolean = false): Boolean {
@@ -20,34 +35,15 @@ fun rememberRequestPackageInstallsPermissionState(initialValue: Boolean = false)
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var installGranted by remember {
-        mutableStateOf(initialValue || context.packageManager.canRequestPackageInstalls())
+        mutableStateOf(initialValue || context.canRequestPackageInstallsCompat())
     }
 
-    DisposableEffect(lifecycleOwner.lifecycle, context) {
-        val refresh = {
-            installGranted = context.packageManager.canRequestPackageInstalls()
-        }
-
-        refresh()
-
-        val observer = object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                refresh()
+    LaunchedEffect(lifecycleOwner.lifecycle, context) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                installGranted = context.canRequestPackageInstallsCompat()
+                delay(500)
             }
-
-            override fun onResume(owner: LifecycleOwner) {
-                refresh()
-                owner.lifecycleScope.launch {
-                    delay(300)
-                    refresh()
-                    delay(700)
-                    refresh()
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
