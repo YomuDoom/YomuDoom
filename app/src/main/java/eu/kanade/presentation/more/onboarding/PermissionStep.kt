@@ -25,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,6 +41,10 @@ import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import eu.kanade.tachiyomi.util.system.telemetryIncluded
+import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -49,33 +55,52 @@ internal class PermissionStep : OnboardingStep {
 
     private val privacyPreferences: PrivacyPreferences by injectLazy()
 
-    private var notificationGranted by mutableStateOf(false)
-    private var batteryGranted by mutableStateOf(false)
-
     override val isComplete: Boolean = true
 
     @Composable
     override fun Content() {
         val context = LocalContext.current
         val lifecycleOwner = LocalLifecycleOwner.current
+        val scope = rememberCoroutineScope()
 
         val installGranted = rememberRequestPackageInstallsPermissionState()
+        var notificationGranted by remember { mutableStateOf(false) }
+        var batteryGranted by remember { mutableStateOf(false) }
+        var refreshJob by remember { mutableStateOf<Job?>(null) }
 
-        DisposableEffect(lifecycleOwner.lifecycle) {
+        fun refreshPermissions() {
+            notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            batteryGranted = context.getSystemService<PowerManager>()
+                ?.isIgnoringBatteryOptimizations(context.packageName) == true
+        }
+
+        fun refreshPermissionsWithRetry() {
+            refreshPermissions()
+            refreshJob?.cancel()
+            refreshJob = scope.launch {
+                delay(300)
+                refreshPermissions()
+                delay(700)
+                refreshPermissions()
+            }
+        }
+
+        DisposableEffect(lifecycleOwner.lifecycle, context) {
+            refreshPermissionsWithRetry()
             val observer = object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    refreshPermissionsWithRetry()
+                }
+
                 override fun onResume(owner: LifecycleOwner) {
-                    notificationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                            PackageManager.PERMISSION_GRANTED
-                    } else {
-                        true
-                    }
-                    batteryGranted = context.getSystemService<PowerManager>()!!
-                        .isIgnoringBatteryOptimizations(context.packageName)
+                    refreshPermissionsWithRetry()
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
+                refreshJob?.cancel()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }
@@ -94,7 +119,7 @@ internal class PermissionStep : OnboardingStep {
                 val permissionRequester = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = {
-                        // no-op. resulting checks is being done on resume
+                        refreshPermissionsWithRetry()
                     },
                 )
                 PermissionCheckbox(
@@ -111,10 +136,18 @@ internal class PermissionStep : OnboardingStep {
                 granted = batteryGranted,
                 onButtonClick = {
                     @SuppressLint("BatteryLife")
-                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    val packageIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                         data = "package:${context.packageName}".toUri()
                     }
-                    context.startActivity(intent)
+                    val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    val opened = runCatching {
+                        context.startActivity(packageIntent)
+                    }.recoverCatching {
+                        context.startActivity(fallbackIntent)
+                    }.isSuccess
+                    if (!opened) {
+                        context.toast(MR.strings.battery_optimization_setting_activity_not_found)
+                    }
                 },
             )
 

@@ -38,7 +38,9 @@ fun rememberRequestPackageInstallsPermissionState(initialValue: Boolean = false)
             override fun onResume(owner: LifecycleOwner) {
                 refresh()
                 owner.lifecycleScope.launch {
-                    delay(250)
+                    delay(300)
+                    refresh()
+                    delay(700)
                     refresh()
                 }
             }

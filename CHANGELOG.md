@@ -1,5 +1,11 @@
 # YomuDoom Changelog
 
+## 0.20.19
+
+- Fixed onboarding permission checks not refreshing after returning from Android or HyperOS settings.
+- Added safe fallbacks when device permission settings cannot be opened.
+- Prevented intermittent onboarding crashes caused by unavailable system settings activities.
+
 ## 0.20.18
 
 - Added a YomuDoom launcher icon generated specifically for the project.

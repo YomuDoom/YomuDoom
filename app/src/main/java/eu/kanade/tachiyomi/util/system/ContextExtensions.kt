@@ -157,8 +157,16 @@ val Context.hasMiuiPackageInstaller get() = isPackageInstalled("com.miui.package
 val Context.isShizukuInstalled get() = isPackageInstalled("moe.shizuku.privileged.api") || Sui.isSui()
 
 fun Context.launchRequestPackageInstallsPermission() {
-    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+    val packageIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
         data = "package:$packageName".toUri()
-        startActivity(this)
+    }
+    val fallbackIntent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+    val opened = runCatching {
+        startActivity(packageIntent)
+    }.recoverCatching {
+        startActivity(fallbackIntent)
+    }.isSuccess
+    if (!opened) {
+        toast(MR.strings.battery_optimization_setting_activity_not_found)
     }
 }
