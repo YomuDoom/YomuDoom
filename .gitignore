@@ -1,0 +1,25 @@
+# Build files
+.gradle
+.kotlin
+build
+
+# Local APK archive (version metadata is tracked, binaries stay local)
+/apks/**/*.apk
+
+# IDE files
+*.iml
+.idea/*
+/captures
+
+# Configuration files
+keystore.properties
+local.properties
+
+# Local project memory and personal helpers
+PROJECT_CONTEXT.md
+__pycache__/
+*.pyc
+send_apk_whatsapp.py
+
+# macOS specific files
+.DS_Store
