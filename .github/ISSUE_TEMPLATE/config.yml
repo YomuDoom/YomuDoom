@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Marco-arch/YomuDoom/security/advisories/new
+    about: Send security-sensitive reports privately instead of opening a public issue.
   - name: YomuDoom releases
     url: https://github.com/Marco-arch/YomuDoom/releases
     about: Check existing release notes before opening an issue about an update.

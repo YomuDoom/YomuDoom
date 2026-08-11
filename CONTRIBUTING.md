@@ -21,4 +21,4 @@ Translation changes belong in the `i18n` module. Add or update the Brazilian Por
 
 ## Security
 
-Do not publish private data, signing keys, Firebase configuration, device identifiers, or user content in issues or pull requests. Use GitHub's private vulnerability reporting for security-sensitive reports when available.
+Do not publish private data, signing keys, Firebase configuration, device identifiers, or user content in issues or pull requests. Follow [SECURITY.md](./SECURITY.md) and use GitHub's private vulnerability reporting for security-sensitive reports.

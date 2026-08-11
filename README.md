@@ -26,6 +26,8 @@ Baixe a versão mais recente na página de [Releases](https://github.com/Marco-a
 
 O código mantém a licença Apache 2.0 e a atribuição aos projetos originais utilizados como base.
 
+O YomuDoom mantém a Keiyoushi pré-configurada como loja de extensões selecionada pelo projeto. A loja, suas extensões e sua infraestrutura são independentes do YomuDoom. Integrações de trackers preservam clientes e callbacks do Mihon para compatibilidade.
+
 ### Aviso
 
 O aplicativo não hospeda conteúdo e não possui afiliação com os provedores de conteúdo acessados por suas fontes.
@@ -33,7 +35,7 @@ O aplicativo não hospeda conteúdo e não possui afiliação com os provedores 
 ### Licença
 
 Este projeto é distribuído sob a [Apache License 2.0](./LICENSE). Os direitos autorais e atribuições existentes no código-fonte original são preservados.
-As modificações e a identidade YomuDoom são mantidas por **YomuDoom Project / Marco**. Consulte também o arquivo [NOTICE](./NOTICE).
+As modificações e a identidade YomuDoom são mantidas por **YomuDoom Project / Marco**. Consulte também os arquivos [NOTICE](./NOTICE) e [UPSTREAM](./UPSTREAM.md) para conhecer a origem e o inventário das mudanças.
 
 O ícone e os recursos visuais identificados como YomuDoom foram gerados com IA especificamente para este projeto e revisados como parte de sua identidade visual.
 
@@ -63,6 +65,8 @@ Download the latest version from the [Releases](https://github.com/Marco-arch/Yo
 
 The code keeps the Apache 2.0 license and attribution for the original projects used as its foundation.
 
+YomuDoom ships Keiyoushi as its project-selected, preconfigured extension store. The store, its extensions, and its infrastructure are independent from YomuDoom. Tracker integrations retain Mihon clients and callbacks for compatibility.
+
 ### Disclaimer
 
 The application hosts no content and is not affiliated with the content providers accessed through its sources.
@@ -70,6 +74,6 @@ The application hosts no content and is not affiliated with the content provider
 ### License
 
 This project is distributed under the [Apache License 2.0](./LICENSE). Existing copyright notices and attributions in the original source code are preserved.
-YomuDoom modifications and product identity are maintained by **YomuDoom Project / Marco**. See [NOTICE](./NOTICE) for attribution details.
+YomuDoom modifications and product identity are maintained by **YomuDoom Project / Marco**. See [NOTICE](./NOTICE) and [UPSTREAM](./UPSTREAM.md) for provenance and the modification inventory.
 
 The YomuDoom icon and project-specific visual assets were generated with AI specifically for this project and reviewed as part of its visual identity.

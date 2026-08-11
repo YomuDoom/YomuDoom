@@ -1,5 +1,12 @@
 # YomuDoom Changelog
 
+## 0.20.21
+
+- Documented the exact Mihon baseline and the complete YomuDoom modification inventory.
+- Removed obsolete donation strings and cleaned visible Mihon branding from all translations.
+- Added the public security policy, ownership rules, and repository hardening documentation.
+- Documented Keiyoushi curation and tracker compatibility boundaries.
+
 ## 0.20.20
 
 - Added HyperOS-compatible permission detection through Android AppOps.

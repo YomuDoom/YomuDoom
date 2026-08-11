@@ -322,7 +322,7 @@
     <string name="restoring_backup_error">Herstellen mislukt</string>
     <string name="restore_in_progress">Er wordt al een back-up hersteld</string>
     <string name="channel_ext_updates">Extensie-updates</string>
-    <string name="information_webview_required">WebView is vereist voor Mihon</string>
+    <string name="information_webview_required">WebView is vereist voor YomuDoom</string>
     <string name="notification_chapters_multiple">Hoofdstukken %1$s</string>
     <string name="notification_chapters_single_and_more">Hoofdstuk %1$s en %2$d meer</string>
     <string name="notification_chapters_single">Hoofdstuk %1$s</string>
@@ -899,16 +899,4 @@
     <string name="extensionStoresScreen.deleteStore.body">Wil je de extensiewinkel \"%1$s\" (%2$s) verwijderen?</string>
     <string name="pref_webtoon_vertical_navigator">Gebruik verticale navigator voor lange strips lezen</string>
     <string name="pref_webtoon_vertical_navigator_on_left">Plaats verticale navigator aan de linkerkant</string>
-    <string name="supportUsScreen.perks">Donateurs krijgen toegang tot exclusieve kanalen, met meer voordelen in de toekomst.</string>
-    <string name="supportUsScreen.donationPlatform.patreon">Patreon (bij voorkeur)</string>
-    <string name="supportUsScreen.donationPlatform.opencollective">OpenCollective</string>
-    <string name="supportUsScreen.currentlySupportedBy">Mihon wordt op dit moment gesteund door %d+ donateurs. Wij willen ieder van jullie bedanken. Laten we Mihon samen nog beter maken.</string>
-    <string name="supportUsScreen.contactForDetailsMessage">Voor alternatieve opties of gerelateerde vragen, wordt lid van onze Discord server.</string>
-    <string name="supportUsScreen.contactPlatform">Discord</string>
-    <string name="donationCampaign.title">Bevalt de app je?</string>
-    <string name="donationCampaign.paragraph1">Hoi! Ik ben de hoofddeveloper van Mihon en ik wil je vragen om te overwegen de ontwikkeling financieel te ondersteunen. Met genoeg steun zal ik voltijds aan Mihon kunnen werken en mij kunnen focussen op lang bestaande problemen alsook veelgevraagde functies.</string>
-    <string name="donationCampaign.paragraph2">Je kan doneren via Patreon (bij voorkeur) of OpenCollective. Als je vragen hebt of op een andere manier wil steunen, kan je altijd naar mij uitreiken via Mihon\'s Discord server.</string>
-    <string name="donationCampaign.paragraph3">Hoe dan ook, Mihon zal blijven onderhouden worden door mij en de vrijwilligers, en het zal open source blijven.</string>
-    <string name="donationCampaign.contactPlatform">Discord</string>
-    <string name="donationCampaign.dismiss">Afwijzen</string>
 </resources>

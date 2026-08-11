@@ -5,6 +5,10 @@ YomuDoom is a derivative work based on Mihon and the Tachiyomi project.
 It includes software developed by the Mihon Open Source Project and earlier
 Tachiyomi contributors, including original work by Javier Tomás.
 
+The recorded Mihon baseline is commit
+ab58a9952e55485d81193f13ffc262725d8cae32 from
+https://github.com/mihonapp/mihon.
+
 Copyright 2024 Mihon Open Source Project
 Copyright 2015-2024 Javier Tomás and Tachiyomi contributors
 
@@ -14,3 +18,7 @@ and attribution notices in incorporated source files remain in effect.
 
 This product also includes third-party open-source components whose licenses
 and notices are available from the in-app Open Source Licenses screen.
+
+YomuDoom preconfigures the independent Keiyoushi extension store as a project
+curation choice. Tracker OAuth clients and callbacks inherited from Mihon are
+retained for compatibility and are not represented as YomuDoom infrastructure.

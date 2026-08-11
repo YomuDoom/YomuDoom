@@ -1,0 +1,7 @@
+# Default ownership
+* @Marco-arch
+
+# Release and security-sensitive automation
+/.github/workflows/ @Marco-arch
+/app/build.gradle.kts @Marco-arch
+/SECURITY.md @Marco-arch
