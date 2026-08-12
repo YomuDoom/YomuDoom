@@ -35,7 +35,7 @@ class BangumiInterceptor(private val bangumi: Bangumi) : Interceptor {
         return originalRequest.newBuilder()
             .header(
                 "User-Agent",
-                "YomuDoom/v${BuildConfig.VERSION_NAME} (Android) (https://github.com/Marco-arch/YomuDoom)",
+                "YomuDoom/v${BuildConfig.VERSION_NAME} (Android) (https://github.com/YomuDoom/YomuDoom)",
             )
             .apply {
                 addHeader("Authorization", "Bearer ${currAuth.accessToken}")

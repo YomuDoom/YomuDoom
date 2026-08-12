@@ -39,7 +39,7 @@
 - Added YomuDoom branding, launcher icon, splash icon, and notification icons.
 - Removed donation campaigns, Support Us, legacy help links, and external Mihon social links.
 - Removed the WhatsApp APK helper; releases are distributed through GitHub.
-- Added GitHub-based update configuration for `Marco-arch/YomuDoom`.
+- Added GitHub-based update configuration for `YomuDoom/YomuDoom`.
 
 ## 0.20.15
 

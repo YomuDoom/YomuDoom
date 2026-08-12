@@ -40,7 +40,7 @@ class AppUpdateChecker {
     }
 }
 
-const val GITHUB_REPO = "Marco-arch/YomuDoom"
+const val GITHUB_REPO = "YomuDoom/YomuDoom"
 
 val RELEASE_TAG: String by lazy {
     "v${BuildConfig.VERSION_NAME.substringBefore('-')}"

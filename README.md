@@ -15,7 +15,7 @@ YomuDoom é um leitor Android para mangás, webtoons e quadrinhos. O projeto é 
 
 ### Download
 
-Baixe a versão mais recente na página de [Releases](https://github.com/Marco-arch/YomuDoom/releases). O YomuDoom requer Android 8.0 ou superior.
+Baixe a versão mais recente na página de [Releases](https://github.com/YomuDoom/YomuDoom/releases). O YomuDoom requer Android 8.0 ou superior.
 
 ### Desenvolvimento
 
@@ -54,7 +54,7 @@ YomuDoom is an Android reader for manga, webtoons, comics, and similar content. 
 
 ### Download
 
-Download the latest version from the [Releases](https://github.com/Marco-arch/YomuDoom/releases) page. YomuDoom requires Android 8.0 or newer.
+Download the latest version from the [Releases](https://github.com/YomuDoom/YomuDoom/releases) page. YomuDoom requires Android 8.0 or newer.
 
 ### Development
 

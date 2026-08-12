@@ -163,7 +163,7 @@ data object LibraryTab : Tab {
                                         - Added a refresh button to Recommendations.
                                         - Added a compact update dialog with release notes.
                                     """.trimIndent(),
-                                    releaseLink = "https://github.com/Marco-arch/YomuDoom/releases",
+                                    releaseLink = "https://github.com/YomuDoom/YomuDoom/releases",
                                     downloadLink = "",
                                     preview = true,
                                 ),
