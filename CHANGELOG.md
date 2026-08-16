@@ -1,5 +1,25 @@
 # YomuDoom Changelog
 
+## 0.21.0
+
+### Português (Brasil)
+
+- Inicia a beta pública do YomuDoom no GitHub.
+- Corrige a verificação de permissão de instalação no Android 8 e 9 e mantém a compatibilidade com HyperOS.
+- Corrige a atualização de idioma no calendário de próximos lançamentos.
+- Adiciona uma política de privacidade pública e acessível pela tela Sobre.
+- Torna o lint de release obrigatório e adiciona análise CodeQL.
+- Adiciona SHA-256 e impressão digital do certificado aos releases oficiais.
+
+### English
+
+- Starts the public YomuDoom beta on GitHub.
+- Fixes install-permission detection on Android 8 and 9 while preserving HyperOS compatibility.
+- Fixes locale updates in the upcoming releases calendar.
+- Adds a public privacy policy accessible from the About screen.
+- Makes release lint mandatory and adds CodeQL analysis.
+- Adds SHA-256 and the signing certificate fingerprint to official releases.
+
 ## 0.20.24
 
 - Changed the default chapter order for new titles to ascending.

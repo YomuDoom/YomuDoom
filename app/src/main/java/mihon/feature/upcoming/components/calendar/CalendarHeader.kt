@@ -20,9 +20,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -37,6 +37,8 @@ fun CalenderHeader(
     onNextClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val locale = LocalConfiguration.current.locales[0]
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -48,7 +50,7 @@ fun CalenderHeader(
             label = "Change Month",
         ) { monthYear ->
             Text(
-                text = getTitleText(monthYear),
+                text = getTitleText(monthYear, locale),
                 style = MaterialTheme.typography.titleLarge,
             )
         }
@@ -84,10 +86,8 @@ private fun AnimatedContentTransitionScope<YearMonth>.getAnimation(): ContentTra
         .using(SizeTransform(clip = false))
 }
 
-@Composable
-@ReadOnlyComposable
-private fun getTitleText(monthYear: YearMonth): String {
-    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+private fun getTitleText(monthYear: YearMonth, locale: Locale): String {
+    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", locale)
     return formatter.format(monthYear)
 }
 

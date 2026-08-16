@@ -2,6 +2,7 @@ package eu.kanade.presentation.util
 
 import android.app.AppOpsManager
 import android.content.Context
+import android.os.Build
 import android.os.Process
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,11 +22,21 @@ fun Context.canRequestPackageInstallsCompat(): Boolean {
 
     val appOps = getSystemService<AppOpsManager>() ?: return false
     return runCatching {
-        appOps.unsafeCheckOpNoThrow(
-            "android:request_install_packages",
-            Process.myUid(),
-            packageName,
-        ) == AppOpsManager.MODE_ALLOWED
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                "android:request_install_packages",
+                Process.myUid(),
+                packageName,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                "android:request_install_packages",
+                Process.myUid(),
+                packageName,
+            )
+        }
+        mode == AppOpsManager.MODE_ALLOWED
     }.getOrDefault(false)
 }
 

@@ -24,10 +24,12 @@ import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import tachiyomi.core.common.Constants
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
@@ -128,6 +130,13 @@ object AboutScreen : Screen() {
                             },
                         )
                     }
+                }
+
+                item {
+                    TextPreferenceWidget(
+                        title = stringResource(MR.strings.privacy_policy),
+                        onPreferenceClick = { context.openInBrowser(Constants.URL_PRIVACY_POLICY) },
+                    )
                 }
 
                 item {

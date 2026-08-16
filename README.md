@@ -31,6 +31,7 @@ O YomuDoom mantém a Keiyoushi pré-configurada como loja de extensões selecion
 ### Aviso
 
 O aplicativo não hospeda conteúdo e não possui afiliação com os provedores de conteúdo acessados por suas fontes.
+Consulte a [Política de Privacidade](./PRIVACY.md) para entender quais dados permanecem no aparelho e quais serviços externos podem ser acessados.
 
 ### Licença
 
@@ -70,6 +71,7 @@ YomuDoom ships Keiyoushi as its project-selected, preconfigured extension store.
 ### Disclaimer
 
 The application hosts no content and is not affiliated with the content providers accessed through its sources.
+See the [Privacy Policy](./PRIVACY.md) to understand which data remains on the device and which external services may be contacted.
 
 ### License
 
