@@ -123,7 +123,7 @@ data class Manga(
             fetchInterval = 0,
             dateAdded = 0L,
             viewerFlags = 0L,
-            chapterFlags = 0L,
+            chapterFlags = CHAPTER_SORT_ASC,
             coverLastModified = 0L,
             artist = null,
             author = null,

@@ -1,5 +1,11 @@
 # YomuDoom Changelog
 
+## 0.20.24
+
+- Changed the default chapter order for new titles to ascending.
+- Kept manually selected chapter ordering for each title unchanged.
+- Kept the manual “Check for updates” action available in the About screen.
+
 ## 0.20.23
 
 - Added a manual “Check for updates” action to the About screen.

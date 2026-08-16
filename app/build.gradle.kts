@@ -33,8 +33,8 @@ android {
     defaultConfig {
         applicationId = "app.yomudoom"
 
-        versionCode = 48
-        versionName = "0.20.23"
+        versionCode = 49
+        versionName = "0.20.24"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
