@@ -59,12 +59,29 @@ jobs:
       - name: Rename APK
         run: mv app/build/outputs/apk/release/app-universal-release.apk YomuDoom-${{ github.ref_name }}-universal.apk
 
+      - name: Generate release integrity files
+        shell: bash
+        run: |
+          apk="YomuDoom-${GITHUB_REF_NAME}-universal.apk"
+          sha256sum "$apk" > SHA256SUMS.txt
+
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          certificate_digest="$($apksigner verify --print-certs "$apk" | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)"
+          if [ -z "$certificate_digest" ]; then
+            echo "Could not read the APK signing certificate" >&2
+            exit 1
+          fi
+          printf '%s\n' "$certificate_digest" > SIGNING_CERTIFICATE_SHA256.txt
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         with:
-          name: YomuDoom ${{ github.ref_name }}
+          name: ${{ github.ref_name == 'v0.21.0' && 'YomuDoom v0.21.0 — Public Beta' || format('YomuDoom {0}', github.ref_name) }}
           body_path: release-notes.md
-          files: YomuDoom-${{ github.ref_name }}-universal.apk
+          files: |
+            YomuDoom-${{ github.ref_name }}-universal.apk
+            SHA256SUMS.txt
+            SIGNING_CERTIFICATE_SHA256.txt
           draft: false
           prerelease: false
           token: ${{ github.token }}
