@@ -945,7 +945,7 @@
 
     <!-- Crash screen -->
     <string name="crash_screen_title">Whoops!</string>
-    <string name="crash_screen_description">%s ran into an unexpected error. We suggest you share the crash logs in our support channel on Discord.</string>
+    <string name="crash_screen_description">%s ran into an unexpected error. Include the crash logs when reporting the problem.</string>
     <string name="crash_screen_restart_application">Restart the application</string>
 
     <!-- Stats screen -->
@@ -1105,4 +1105,18 @@
     <string name="migrationListScreen.progressDialog.cancelLabel">Cancel</string>
     <string name="migrationListScreen.matchWithoutChapterToast">No chapters found, this entry cannot be used for migration</string>
 
+    <!-- Support -->
+    <string name="label_support_us">Support YomuDoom</string>
+    <string name="supportUsScreen.description">Supporting YomuDoom is optional. The app remains free, open source, and fully available without donations.</string>
+    <string name="supportUsScreen.donationPlatform.patreon">Monthly support — Patreon</string>
+    <string name="supportUsScreen.donationPlatform.patreonDescription">US$3 per month, without rewards.</string>
+    <string name="supportUsScreen.donationPlatform.stripe">One-time donation — Stripe</string>
+    <string name="supportUsScreen.donationPlatform.stripeDescription">Choose any amount in USD.</string>
+    <string name="supportUsScreen.donationPlatform.pix">Pix — Brazil</string>
+    <string name="supportUsScreen.pixCopied">Pix key copied.</string>
+    <string name="donationCampaign.title">Enjoying the app?</string>
+    <string name="donationCampaign.paragraph1">If YomuDoom is useful to you, you can voluntarily support its continued development.</string>
+    <string name="donationCampaign.paragraph2">Monthly support, one-time donations, and Pix are available on the support screen. No donation provides exclusive features or rewards.</string>
+    <string name="donationCampaign.paragraph3">YomuDoom will remain free and open source whether or not you donate.</string>
+    <string name="donationCampaign.dismiss">Dismiss</string>
 </resources>

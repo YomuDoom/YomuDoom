@@ -3,6 +3,10 @@ package tachiyomi.core.common
 object Constants {
     const val MANGA_EXTRA = "manga"
 
+    const val URL_DONATE_PATREON = "https://www.patreon.com/YomuDoom"
+    const val URL_DONATE_STRIPE = "https://donate.stripe.com/9B6eVc41KdyJ3Qg4yN0Fi00"
+    const val PIX_KEY = "46da2cde-87ae-4a33-bc58-be969767dfa9"
+
     const val MAIN_ACTIVITY = "eu.kanade.tachiyomi.ui.main.MainActivity"
 
     // Shortcut actions

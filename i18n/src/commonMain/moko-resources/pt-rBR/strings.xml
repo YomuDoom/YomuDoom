@@ -670,7 +670,7 @@
     <string name="pref_advanced_summary">Exportar registros de travamento, otimizações de bateria</string>
     <string name="crash_screen_title">Ooops!</string>
     <string name="crash_screen_restart_application">Reiniciar o aplicativo</string>
-    <string name="crash_screen_description">%s teve um erro inesperado. Nós sugerimos que você compartilhe os registros de travamento em nosso canal de suporte no Discord.</string>
+    <string name="crash_screen_description">%s teve um erro inesperado. Inclua os registros de travamento ao relatar o problema.</string>
     <string name="unknown_title">Título desconhecido</string>
     <string name="invalid_location">Local inválido: %s</string>
     <string name="error_user_agent_string_invalid">Valor de user agent inválido</string>
@@ -962,4 +962,18 @@
     <string name="pref_webtoon_vertical_navigator">Use o navegador vertical para leitura de tiras longas</string>
     <string name="pref_webtoon_vertical_navigator_on_left">Coloque o navegador vertical no lado esquerdo</string>
     <string name="extensionStoresScreen.deleteStore.body">Você deseja remover a loja de extensões \"%1$s\" (%2$s)?</string>
+    <!-- Support -->
+    <string name="label_support_us">Apoie o YomuDoom</string>
+    <string name="supportUsScreen.description">Apoiar o YomuDoom é opcional. O aplicativo continuará gratuito, de código aberto e totalmente disponível sem doações.</string>
+    <string name="supportUsScreen.donationPlatform.patreon">Apoio mensal — Patreon</string>
+    <string name="supportUsScreen.donationPlatform.patreonDescription">US$ 3 por mês, sem recompensas.</string>
+    <string name="supportUsScreen.donationPlatform.stripe">Doação única — Stripe</string>
+    <string name="supportUsScreen.donationPlatform.stripeDescription">Escolha qualquer valor em dólar.</string>
+    <string name="supportUsScreen.donationPlatform.pix">Pix — Brasil</string>
+    <string name="supportUsScreen.pixCopied">Chave Pix copiada.</string>
+    <string name="donationCampaign.title">Gostando do aplicativo?</string>
+    <string name="donationCampaign.paragraph1">Se o YomuDoom é útil para você, é possível apoiar voluntariamente a continuidade do desenvolvimento.</string>
+    <string name="donationCampaign.paragraph2">A tela de suporte oferece apoio mensal, doação única e Pix. Nenhuma doação libera recursos exclusivos ou recompensas.</string>
+    <string name="donationCampaign.paragraph3">O YomuDoom continuará gratuito e de código aberto independentemente de doações.</string>
+    <string name="donationCampaign.dismiss">Ignorar</string>
 </resources>

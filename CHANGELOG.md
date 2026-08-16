@@ -1,5 +1,11 @@
 # YomuDoom Changelog
 
+## 0.20.22
+
+- Added voluntary support options through Patreon, Stripe, and Pix.
+- Added a Pix copy action and kept all support options free of rewards or exclusive features.
+- Added a neutral support reminder shown only after six months of use.
+
 ## 0.20.21
 
 - Documented the exact Mihon baseline and the complete YomuDoom modification inventory.

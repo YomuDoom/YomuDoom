@@ -3,6 +3,7 @@ package eu.kanade.presentation.more
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
@@ -35,6 +36,7 @@ fun MoreScreen(
     onClickCategories: () -> Unit,
     onClickStats: () -> Unit,
     onClickDataAndStorage: () -> Unit,
+    onClickSupport: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
 ) {
@@ -65,6 +67,14 @@ fun MoreScreen(
             }
 
             item { HorizontalDivider() }
+
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.label_support_us),
+                    icon = Icons.Default.VolunteerActivism,
+                    onPreferenceClick = onClickSupport,
+                )
+            }
 
             item {
                 val downloadQueueState = downloadQueueStateProvider()
