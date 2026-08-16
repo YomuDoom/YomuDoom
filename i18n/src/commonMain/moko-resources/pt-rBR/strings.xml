@@ -212,6 +212,7 @@
     <string name="file_select_backup">Selecionar arquivo de backup</string>
     <string name="update_check_confirm">Fazer download</string>
     <string name="update_check_no_new_updates">Sem atualizações disponíveis</string>
+    <string name="update_check_failed">Não foi possível procurar atualizações</string>
     <string name="update_check_notification_download_in_progress">Fazendo download…</string>
     <string name="update_check_notification_download_complete">Toque para instalar a atualização</string>
     <string name="update_check_notification_download_error">Erro ao fazer download</string>

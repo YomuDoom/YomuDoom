@@ -1,5 +1,11 @@
 # YomuDoom Changelog
 
+## 0.20.23
+
+- Added a manual “Check for updates” action to the About screen.
+- Reduced the automatic update-check interval from three days to one day.
+- Ensured manual checks bypass the automatic interval and provide visible feedback.
+
 ## 0.20.22
 
 - Added voluntary support options through Patreon, Stripe, and Pix.
