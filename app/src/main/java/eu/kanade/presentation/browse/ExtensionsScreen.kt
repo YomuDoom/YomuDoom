@@ -17,10 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
@@ -40,7 +38,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,8 +69,6 @@ import eu.kanade.tachiyomi.ui.browse.extension.BulkActionItem
 import eu.kanade.tachiyomi.ui.browse.extension.BulkActionType
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionUiModel
 import eu.kanade.tachiyomi.ui.browse.extension.ExtensionsScreenModel
-import eu.kanade.tachiyomi.ui.browse.extension.InstallDialogState
-import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import tachiyomi.i18n.MR
@@ -503,9 +498,7 @@ private fun ExtensionItemActions(
                     }
                     is Extension.Available -> {
                         if (extension.sources.isNotEmpty()) {
-                            IconButton(
-                                onClick = { onClickItemSecondaryAction(extension) },
-                            ) {
+                            IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Public,
                                     contentDescription = stringResource(MR.strings.action_open_in_web_view),
@@ -588,138 +581,6 @@ private fun ExtensionTrustDialog(
 }
 
 @Composable
-fun ExtensionInstallDialog(
-    state: InstallDialogState,
-    onDismissRequest: () -> Unit,
-    onClickRecommended: () -> Unit,
-    onClickAll: () -> Unit,
-    onClickChangeLanguages: () -> Unit,
-    onToggleLanguage: (String) -> Unit,
-    onConfirm: () -> Unit,
-) {
-    val context = LocalContext.current
-    AlertDialog(
-        icon = {
-            DialogIcon(Icons.Outlined.GetApp)
-        },
-        title = {
-            Text(
-                text = stringResource(MR.strings.ext_install_extensions),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
-            ) {
-                Text(
-                    text = stringResource(MR.strings.ext_install_select_mode),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-
-                if (state.mode == InstallMode.Recommended) {
-                    Text(
-                        text = stringResource(MR.strings.ext_install_recommended_instruction),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                InstallModeCard(
-                    icon = Icons.Outlined.AutoAwesome,
-                    title = stringResource(MR.strings.ext_install_recommended),
-                    subtitle = stringResource(MR.strings.ext_install_recommended_description),
-                    selected = state.mode == InstallMode.Recommended,
-                    onClick = onClickRecommended,
-                )
-                InstallModeCard(
-                    icon = Icons.Outlined.DoneAll,
-                    title = stringResource(MR.strings.ext_install_all),
-                    subtitle = stringResource(MR.strings.ext_install_all_description),
-                    selected = state.mode == InstallMode.All,
-                    onClick = onClickAll,
-                )
-
-                if (state.mode == InstallMode.All) {
-                    WarningBanner(
-                        textRes = MR.strings.ext_install_all_message,
-                    )
-                }
-
-                val showLanguageSelector = state.mode == InstallMode.All || state.showLanguageSelector
-                if (showLanguageSelector) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = MaterialTheme.padding.small),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(MR.strings.ext_install_select_languages),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Text(
-                            text = "${state.selectedLanguages.size}/${state.languages.size}",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ),
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.heightIn(max = 220.dp),
-                        ) {
-                            items(state.languages, key = { it }) { language ->
-                                val selected = language in state.selectedLanguages
-                                ListItem(
-                                    modifier = Modifier.clickable { onToggleLanguage(language) },
-                                    colors = ListItemDefaults.colors(
-                                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                                    ),
-                                    leadingContent = {
-                                        Checkbox(
-                                            checked = selected,
-                                            onCheckedChange = { onToggleLanguage(language) },
-                                        )
-                                    },
-                                    content = {
-                                        Text(text = LocaleHelper.getSourceDisplayName(language, context))
-                                    },
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    TextButton(onClick = onClickChangeLanguages) {
-                        Text(text = stringResource(MR.strings.ext_install_change_languages))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled = state.selectedLanguages.isNotEmpty(),
-            ) {
-                Text(text = stringResource(MR.strings.action_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(MR.strings.action_cancel))
-            }
-        },
-        onDismissRequest = onDismissRequest,
-    )
-}
-
-@Composable
 fun ExtensionBulkActionDialog(
     state: BulkActionDialogState,
     onDismissRequest: () -> Unit,
@@ -728,48 +589,24 @@ fun ExtensionBulkActionDialog(
     onConfirm: () -> Unit,
 ) {
     val context = LocalContext.current
-    val displayItems = if (state.action == BulkActionType.Install) {
-        state.items.sortedWith(
-            compareBy<BulkActionItem> { it.installed }
-                .thenBy { (it.extension as? Extension.Available)?.lang.orEmpty() }
-                .thenBy { it.extension.name },
-        )
-    } else {
-        state.items
-    }
-    val isRecommendedInstall = state.action == BulkActionType.Install &&
-        state.installMode == InstallMode.Recommended
     val title = when (state.action) {
-        BulkActionType.Install -> if (isRecommendedInstall) {
-            MR.strings.ext_install_recommended
-        } else {
-            MR.strings.ext_install_extensions
-        }
         BulkActionType.Uninstall -> MR.strings.ext_uninstall_all
         BulkActionType.Trust -> MR.strings.ext_trust_all
     }
-
     val confirmText = when (state.action) {
-        BulkActionType.Install -> if (isRecommendedInstall) {
-            MR.strings.ext_install_recommended_action
-        } else {
-            MR.strings.ext_install
-        }
         BulkActionType.Uninstall -> MR.strings.ext_uninstall
         BulkActionType.Trust -> MR.strings.ext_trust
     }
+    val icon = when (state.action) {
+        BulkActionType.Uninstall -> Icons.Outlined.Delete
+        BulkActionType.Trust -> Icons.Outlined.VerifiedUser
+    }
+    val isDestructive = state.action == BulkActionType.Uninstall
     val selectAllText = if (state.selectedCount == state.eligibleCount && state.eligibleCount > 0) {
         MR.strings.action_select_inverse
     } else {
         MR.strings.action_select_all
     }
-
-    val icon = when (state.action) {
-        BulkActionType.Install -> Icons.Outlined.GetApp
-        BulkActionType.Uninstall -> Icons.Outlined.Delete
-        BulkActionType.Trust -> Icons.Outlined.VerifiedUser
-    }
-    val isDestructive = state.action == BulkActionType.Uninstall
 
     AlertDialog(
         icon = { DialogIcon(icon, isDestructive) },
@@ -783,25 +620,11 @@ fun ExtensionBulkActionDialog(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall,
                 )
-                Surface(
-                    color = if (isDestructive) {
-                        MaterialTheme.colorScheme.errorContainer
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    },
-                    shape = MaterialTheme.shapes.small,
-                ) {
-                    Text(
-                        text = "${state.selectedCount}/${state.eligibleCount}",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        color = if (isDestructive) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
+                Text(
+                    text = "${state.selectedCount}/${state.eligibleCount}",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
         },
         text = {
@@ -809,110 +632,58 @@ fun ExtensionBulkActionDialog(
                 modifier = Modifier.heightIn(max = 420.dp),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
-                if (state.action == BulkActionType.Install) {
-                    Text(
-                        text = stringResource(
-                            if (isRecommendedInstall) {
-                                MR.strings.ext_install_recommended_preview_message
-                            } else {
-                                MR.strings.ext_install_preview_message
-                            },
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onSelectAll) {
                         Text(text = stringResource(selectAllText))
                     }
                 }
-
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 280.dp),
-                    ) {
-                        items(displayItems, key = { it.extension.pkgName }) { item ->
-                            ListItem(
-                                modifier = Modifier.clickable(
-                                    enabled = item.eligible,
-                                    onClick = { onToggleItem(item.extension.pkgName) },
-                                ),
-                                colors = ListItemDefaults.colors(
-                                    containerColor = if (item.selected) {
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    } else {
-                                        androidx.compose.ui.graphics.Color.Transparent
-                                    },
-                                ),
-                                leadingContent = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Checkbox(
-                                            checked = item.selected,
-                                            onCheckedChange = if (item.eligible) {
-                                                { onToggleItem(item.extension.pkgName) }
-                                            } else {
-                                                null
-                                            },
-                                        )
-                                        ExtensionIcon(
-                                            extension = item.extension,
-                                            modifier = Modifier.size(36.dp),
-                                        )
-                                    }
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                    items(state.items, key = { it.extension.pkgName }) { item ->
+                        ListItem(
+                            modifier = Modifier.clickable(
+                                enabled = item.eligible,
+                                onClick = { onToggleItem(item.extension.pkgName) },
+                            ),
+                            colors = ListItemDefaults.colors(
+                                containerColor = if (item.selected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    androidx.compose.ui.graphics.Color.Transparent
                                 },
-                                content = {
-                                    Text(
-                                        text = item.extension.name,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                },
-                                supportingContent = {
-                                    Text(text = LocaleHelper.getSourceDisplayName(item.extension.lang, context))
-                                },
-                                trailingContent = {
-                                    Text(
-                                        text = when (state.action) {
-                                            BulkActionType.Install -> if (item.installed) {
-                                                stringResource(MR.strings.ext_already_installed)
-                                            } else if (item.selected) {
-                                                stringResource(MR.strings.ext_install)
-                                            } else {
-                                                stringResource(MR.strings.not_selected)
-                                            }
-                                            BulkActionType.Uninstall -> if (item.selected) {
-                                                stringResource(MR.strings.ext_uninstall)
-                                            } else {
-                                                stringResource(MR.strings.not_selected)
-                                            }
-                                            BulkActionType.Trust -> if (item.selected) {
-                                                stringResource(MR.strings.ext_trust)
-                                            } else {
-                                                stringResource(MR.strings.not_selected)
-                                            }
-                                        },
-                                        color = if (item.selected) {
-                                            MaterialTheme.colorScheme.primary
+                            ),
+                            leadingContent = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Checkbox(
+                                        checked = item.selected,
+                                        onCheckedChange = if (item.eligible) {
+                                            { onToggleItem(item.extension.pkgName) }
                                         } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                            null
                                         },
                                     )
-                                },
-                            )
-                        }
+                                    ExtensionIcon(
+                                        extension = item.extension,
+                                        modifier = Modifier.size(36.dp),
+                                    )
+                                }
+                            },
+                            content = {
+                                Text(
+                                    text = item.extension.name,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            supportingContent = {
+                                Text(text = LocaleHelper.getSourceDisplayName(item.extension.lang, context))
+                            },
+                        )
                     }
                 }
             }
@@ -966,76 +737,5 @@ private fun DialogIcon(
                 MaterialTheme.colorScheme.onPrimaryContainer
             },
         )
-    }
-}
-
-@Composable
-private fun InstallModeCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
-        border = if (selected) {
-            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            null
-        },
-    ) {
-        Row(
-            modifier = Modifier.padding(MaterialTheme.padding.medium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                },
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.padding(10.dp),
-                    tint = if (selected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = subtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            RadioButton(
-                selected = selected,
-                onClick = onClick,
-            )
-        }
     }
 }

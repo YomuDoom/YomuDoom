@@ -1,5 +1,23 @@
 # YomuDoom Changelog
 
+## 0.21.1
+
+### Português (Brasil)
+
+- Remove a loja de extensões pré-configurada; novas instalações começam sem lojas.
+- Mantém lojas e extensões já configuradas por usuários existentes.
+- Mantém cadastro manual de lojas externas com aviso de segurança e responsabilidade.
+- Remove deeplinks de lojas, recomendações de fontes e instalação coletiva de extensões.
+- Remove a variante e os recursos planejados para a Google Play.
+
+### English
+
+- Removes the preconfigured extension store; new installations start with no stores.
+- Preserves stores and extensions already configured by existing users.
+- Keeps manual external-store configuration with a security and responsibility notice.
+- Removes store deeplinks, source recommendations, and bulk extension installation.
+- Removes the planned Google Play variant and assets.
+
 ## 0.21.0
 
 ### Português (Brasil)
@@ -43,7 +61,7 @@
 - Documented the exact Mihon baseline and the complete YomuDoom modification inventory.
 - Removed obsolete donation strings and cleaned visible Mihon branding from all translations.
 - Added the public security policy, ownership rules, and repository hardening documentation.
-- Documented Keiyoushi curation and tracker compatibility boundaries.
+- Documented extension and tracker compatibility boundaries.
 
 ## 0.20.20
 
@@ -66,7 +84,7 @@
 ## 0.20.17
 
 - Added a subtle indicator when 18+ content is hidden.
-- Curated the recommended source list and added onboarding guidance.
+- Improved extension onboarding guidance.
 - Added a refresh button to the Recommendations tab.
 - Replaced the full-screen update page with a compact dialog.
 - Fixed the startup crash caused by the missing NSFW filter registration.

@@ -5,7 +5,7 @@ object Constants {
 
     const val URL_DONATE_PATREON = "https://www.patreon.com/YomuDoom"
     const val URL_DONATE_STRIPE = "https://donate.stripe.com/9B6eVc41KdyJ3Qg4yN0Fi00"
-    const val URL_PRIVACY_POLICY = "https://github.com/YomuDoom/YomuDoom/blob/main/PRIVACY.md"
+    const val URL_PRIVACY_POLICY = "https://yomudoom.github.io/YomuDoom/privacy/"
     const val PIX_KEY = "46da2cde-87ae-4a33-bc58-be969767dfa9"
 
     const val MAIN_ACTIVITY = "eu.kanade.tachiyomi.ui.main.MainActivity"

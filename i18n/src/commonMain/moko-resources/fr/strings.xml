@@ -900,7 +900,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Ce magasin d\'extension existe déjà</string>
     <string name="extensionStoresScreen.addStore.processing">Mise en place…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">URL de l\'index du magasin</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Souhaitez-vous ajouter le magasin d\'extension ci-dessous ?</string>
     <string name="extensionStoresScreen.deleteStore.title">Retirer le magasin d\'extension</string>
     <string name="extensionStoresScreen.deleteStore.body">Souhaitez-vous retirer le magasin d\'extension \"%1$s\" (%2$s) ?</string>
     <string name="pref_webtoon_vertical_navigator">Utiliser le menu de navigation vertical pour la lecture en bande continue</string>

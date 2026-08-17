@@ -899,5 +899,4 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Cửa hàng tiện ích mở rộng này đã tồn tại</string>
     <string name="extensionStoresScreen.addStore.processing">Đang xử lý…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Lưu URL chỉ mục</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Bạn có muốn thêm cửa hàng tiên ích mở rộng bên dưới không ?</string>
 </resources>

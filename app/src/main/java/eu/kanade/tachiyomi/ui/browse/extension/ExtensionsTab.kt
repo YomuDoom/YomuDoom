@@ -14,13 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.ExtensionBulkActionDialog
-import eu.kanade.presentation.browse.ExtensionInstallDialog
 import eu.kanade.presentation.browse.ExtensionScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.model.Extension
-import eu.kanade.tachiyomi.ui.browse.extension.InstallMode
 import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
@@ -66,10 +64,6 @@ fun extensionsTab(
             } else {
                 null
             },
-            AppBar.OverflowAction(
-                title = stringResource(MR.strings.ext_install_extensions),
-                onClick = { extensionsScreenModel.showInstallDialog() },
-            ),
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
                 onClick = { navigator.push(ExtensionFilterScreen()) },
@@ -121,18 +115,6 @@ fun extensionsTab(
                 onUpdateExtension = extensionsScreenModel::updateExtension,
                 onRefresh = extensionsScreenModel::findAvailableExtensions,
             )
-
-            state.installDialog?.let { dialog ->
-                ExtensionInstallDialog(
-                    state = dialog,
-                    onDismissRequest = extensionsScreenModel::dismissInstallDialog,
-                    onClickRecommended = { extensionsScreenModel.setInstallMode(InstallMode.Recommended) },
-                    onClickAll = { extensionsScreenModel.setInstallMode(InstallMode.All) },
-                    onClickChangeLanguages = extensionsScreenModel::showInstallLanguages,
-                    onToggleLanguage = extensionsScreenModel::toggleInstallLanguage,
-                    onConfirm = extensionsScreenModel::confirmInstallDialog,
-                )
-            }
 
             state.bulkActionDialog?.let { dialog ->
                 ExtensionBulkActionDialog(

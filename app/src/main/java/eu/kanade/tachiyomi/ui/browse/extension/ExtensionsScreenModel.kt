@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.ui.browse.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import androidx.core.os.LocaleListCompat
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
@@ -160,86 +159,6 @@ class ExtensionsScreenModel(
         openBulkActionDialog(BulkActionType.Uninstall)
     }
 
-    fun showInstallDialog() {
-        val available = extensionManager.availableExtensionsFlow.value
-        val languages = available
-            .mapNotNull { it.lang.takeIf(String::isNotBlank) }
-            .filterNot { it.equals("multi", ignoreCase = true) }
-            .distinct()
-            .sortedWith(LocaleHelper.comparator)
-        val systemLanguage =
-            LocaleListCompat.getAdjustedDefault()[0]?.language ?: java.util.Locale.getDefault().language
-        val defaultSelected = languages
-            .filter { it == systemLanguage || it.startsWith("$systemLanguage-") }
-            .toSet()
-            .ifEmpty {
-                languages
-                    .filter { it == "en" || it.startsWith("en-") }
-                    .take(1)
-                    .toSet()
-            }
-            .ifEmpty { languages.take(1).toSet() }
-
-        mutableState.update { state ->
-            state.copy(
-                installDialog = InstallDialogState(
-                    languages = languages,
-                    selectedLanguages = defaultSelected,
-                    mode = InstallMode.Recommended,
-                    showLanguageSelector = false,
-                ),
-            )
-        }
-    }
-
-    fun dismissInstallDialog() {
-        mutableState.update { it.copy(installDialog = null) }
-    }
-
-    fun setInstallMode(mode: InstallMode) {
-        mutableState.update { state ->
-            state.copy(
-                installDialog = state.installDialog?.copy(
-                    mode = mode,
-                    showLanguageSelector = mode == InstallMode.All,
-                ),
-            )
-        }
-    }
-
-    fun showInstallLanguages() {
-        mutableState.update { state ->
-            state.copy(installDialog = state.installDialog?.copy(showLanguageSelector = true))
-        }
-    }
-
-    fun toggleInstallLanguage(language: String) {
-        mutableState.update { state ->
-            val dialog = state.installDialog ?: return@update state
-            val selected = dialog.selectedLanguages.toMutableSet().apply {
-                if (!add(language)) remove(language)
-            }
-            state.copy(installDialog = dialog.copy(selectedLanguages = selected))
-        }
-    }
-
-    fun confirmInstallDialog() {
-        val dialog = state.value.installDialog ?: return
-        val previewItems = buildInstallPreviewItems(dialog)
-
-        dismissInstallDialog()
-
-        mutableState.update { state ->
-            state.copy(
-                bulkActionDialog = BulkActionDialogState(
-                    action = BulkActionType.Install,
-                    items = previewItems,
-                    installMode = dialog.mode,
-                ),
-            )
-        }
-    }
-
     fun dismissBulkActionDialog() {
         mutableState.update { it.copy(bulkActionDialog = null) }
     }
@@ -280,14 +199,6 @@ class ExtensionsScreenModel(
 
         screenModelScope.launchIO {
             when (dialog.action) {
-                BulkActionType.Install -> {
-                    dialog.items
-                        .filter { it.eligible && it.selected }
-                        .mapNotNull { it.extension as? Extension.Available }
-                        .forEach { extension ->
-                            extensionManager.installExtension(extension).collectToInstallUpdate(extension)
-                        }
-                }
                 BulkActionType.Uninstall -> {
                     dialog.items
                         .filter { it.eligible && it.selected }
@@ -310,14 +221,6 @@ class ExtensionsScreenModel(
 
     private fun openBulkActionDialog(action: BulkActionType) {
         val items = when (action) {
-            BulkActionType.Install -> buildInstallPreviewItems(
-                InstallDialogState(
-                    languages = emptyList(),
-                    selectedLanguages = emptySet(),
-                    mode = InstallMode.All,
-                    showLanguageSelector = true,
-                ),
-            )
             BulkActionType.Uninstall ->
                 extensionManager.installedExtensionsFlow.value
                     .sortedWith(compareBy<Extension.Installed> { it.lang }.thenBy { it.name })
@@ -350,44 +253,6 @@ class ExtensionsScreenModel(
                     action = action,
                     items = items,
                 ),
-            )
-        }
-    }
-
-    private fun buildInstallPreviewItems(dialog: InstallDialogState): List<BulkActionItem> {
-        val installedPackages = extensionManager.installedExtensionsFlow.value
-            .asSequence()
-            .map { it.pkgName }
-            .toSet()
-
-        val items = extensionManager.availableExtensionsFlow.value
-            .asSequence()
-            .filter { it.lang in dialog.selectedLanguages }
-            .filter { dialog.mode == InstallMode.All || isRecommendedExtension(it) }
-            .map { extension ->
-                val installed = extension.pkgName in installedPackages
-                BulkActionItem(
-                    extension = extension,
-                    installed = installed,
-                    eligible = !installed,
-                    selected = when (dialog.mode) {
-                        InstallMode.Recommended -> !installed && isRecommendedExtension(extension)
-                        InstallMode.All -> !installed
-                    },
-                )
-            }
-            .toList()
-
-        return if (dialog.mode == InstallMode.Recommended) {
-            items.sortedWith(
-                compareBy<BulkActionItem> { it.installed }
-                    .thenBy { (it.extension as Extension.Available).lang }
-                    .thenBy { it.extension.name },
-            )
-        } else {
-            items.sortedWith(
-                compareBy<BulkActionItem> { (it.extension as Extension.Available).lang }
-                    .thenBy { it.extension.name },
             )
         }
     }
@@ -455,7 +320,6 @@ class ExtensionsScreenModel(
         val updates: Int = 0,
         val installer: BasePreferences.ExtensionInstaller? = null,
         val searchQuery: String? = null,
-        val installDialog: InstallDialogState? = null,
         val bulkActionDialog: BulkActionDialogState? = null,
     ) {
         val isEmpty = items.isEmpty()
@@ -463,33 +327,9 @@ class ExtensionsScreenModel(
 }
 
 @Immutable
-data class InstallDialogState(
-    val languages: List<String>,
-    val selectedLanguages: Set<String>,
-    val mode: InstallMode,
-    val showLanguageSelector: Boolean,
-)
-
-@Immutable
-data class InstallPreviewDialogState(
-    val items: List<InstallPreviewItem>,
-) {
-    val pendingCount: Int = items.count { !it.installed }
-}
-
-@Immutable
-data class InstallPreviewItem(
-    val extension: Extension.Available,
-    val installed: Boolean,
-    val eligible: Boolean,
-    val selected: Boolean,
-)
-
-@Immutable
 data class BulkActionDialogState(
     val action: BulkActionType,
     val items: List<BulkActionItem>,
-    val installMode: InstallMode? = null,
 ) {
     val selectedCount: Int = items.count { it.eligible && it.selected }
     val eligibleCount: Int = items.count { it.eligible }
@@ -504,63 +344,8 @@ data class BulkActionItem(
 )
 
 enum class BulkActionType {
-    Install,
     Uninstall,
     Trust,
-}
-
-enum class InstallMode {
-    Recommended,
-    All,
-}
-
-private fun isRecommendedExtension(extension: Extension.Available): Boolean {
-    val normalizedName = normalizeInstallName(extension.name)
-    return normalizedName in recommendedInstallNamesByLanguage[extension.lang].orEmpty()
-}
-
-private val recommendedInstallNamesByLanguage = mapOf(
-    "en" to setOf(
-        "mangadex",
-        "comick",
-        "bato",
-    ),
-    "pt" to setOf(
-        "lermangas",
-        "mangalivre",
-        "mangahost",
-    ),
-    "es" to setOf(
-        "mangaplus",
-        "mangalib",
-    ),
-    "ja" to setOf(
-        "comick",
-        "mangadex",
-    ),
-    "ko" to setOf(
-        "mangadex",
-        "comick",
-    ),
-    "zh" to setOf(
-        "mangadex",
-        "comick",
-    ),
-    "fr" to setOf(
-        "mangadex",
-        "comick",
-    ),
-    "de" to setOf(
-        "mangadex",
-        "comick",
-    ),
-)
-
-private fun normalizeInstallName(value: String): String {
-    return value.lowercase()
-        .replace(Regex("[^\\p{L}0-9]+"), " ")
-        .trim()
-        .replace(Regex(" +"), " ")
 }
 
 typealias ItemGroups = Map<ExtensionUiModel.Header, List<ExtensionUiModel.Item>>

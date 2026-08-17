@@ -415,7 +415,8 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">This extension store already exists</string>
     <string name="extensionStoresScreen.addStore.processing">Processing…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Store index URL</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Do you wish to add the extension store below?</string>
+    <string name="extensionStoresScreen.addStore.warning">Only add a store you trust and are authorized to use. Third-party stores and extensions are independent from YomuDoom and may access app data.</string>
+    <string name="extensionStoresScreen.addStore.acknowledgement">I understand and accept responsibility for this external store.</string>
     <string name="extensionStoresScreen.deleteStore.title">Remove extension store</string>
     <string name="extensionStoresScreen.deleteStore.body">Do you wish to remove the extension store \"%1$s\" (%2$s)?</string>
 

@@ -44,6 +44,9 @@ jobs:
       - name: Check code format
         run: ./gradlew spotlessCheck
 
+      - name: Verify neutral distribution
+        run: python .github/scripts/verify_neutral_distribution.py
+
       - name: Run unit tests
         id: unit_tests
         run: ./gradlew testDebugUnitTest

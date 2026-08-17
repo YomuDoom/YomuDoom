@@ -894,7 +894,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Deze extensiewinkel bestaat al</string>
     <string name="extensionStoresScreen.addStore.processing">Aan het verwerken…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Winkelindex-URL</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Wil je onderstaande extensiewinkel toevoegen?</string>
     <string name="extensionStoresScreen.deleteStore.title">Extensiewinkel verwijderen</string>
     <string name="extensionStoresScreen.deleteStore.body">Wil je de extensiewinkel \"%1$s\" (%2$s) verwijderen?</string>
     <string name="pref_webtoon_vertical_navigator">Gebruik verticale navigator voor lange strips lezen</string>

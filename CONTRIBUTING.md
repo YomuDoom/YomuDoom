@@ -14,6 +14,12 @@ Pull requests are welcome. For larger changes, open an issue first so the scope 
 - Test the affected code and include the command used.
 - Check visual changes in light and dark themes.
 - Keep changes focused and preserve the existing license and attribution.
+- Do not add built-in extension stores, provider catalogs, recommended sources, or store deeplinks.
+- Do not add code intended to bypass DRM, paywalls, access controls, or provider restrictions.
+
+## External sources and stores
+
+The official project does not accept requests to add or repair content sources, chapters, provider websites, or extension repositories. Report extension-specific problems to the independent maintainer chosen by the user, not to YomuDoom.
 
 ## Translations
 

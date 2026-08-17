@@ -19,6 +19,7 @@ and attribution notices in incorporated source files remain in effect.
 This product also includes third-party open-source components whose licenses
 and notices are available from the in-app Open Source Licenses screen.
 
-YomuDoom preconfigures the independent Keiyoushi extension store as a project
-curation choice. Tracker OAuth clients and callbacks inherited from Mihon are
-retained for compatibility and are not represented as YomuDoom infrastructure.
+YomuDoom ships no extension store or content-provider catalog. Users may
+manually configure compatible third-party stores under their own responsibility.
+Tracker OAuth clients and callbacks inherited from Mihon are retained for
+compatibility and are not represented as YomuDoom infrastructure.

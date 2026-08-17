@@ -901,7 +901,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">이 확장 앱 스토어는 이미 존재합니다</string>
     <string name="extensionStoresScreen.addStore.processing">진행 중…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">스토어 인덱스 URL</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">아래 확장 앱 스토어를 추가하시겠습니까?</string>
     <string name="extensionStoresScreen.deleteStore.title">확장 앱 스토어 제거</string>
     <string name="extensionStoresScreen.deleteStore.body">확장 앱 스토어 \"%1$s\"(%2$s)을(를) 제거하시겠습니까?</string>
     <string name="pref_webtoon_vertical_navigator">긴 스트립 읽기를 위한 세로 네비게이터 사용</string>

@@ -1,14 +1,3 @@
 {
-  "stores": [
-    {
-      "indexUrl": "https://raw.githubusercontent.com/keiyoushi/extensions/main/repo.json",
-      "name": "Keiyoushi",
-      "badgeLabel": "Keiyoushi",
-      "signingKey": "9add655a78e96c4ec7a53ef89dccb557cb5d767489fac5e785d671a5a75d4da2",
-      "website": "https://keiyoushi.github.io",
-      "discord": null,
-      "isLegacy": false,
-      "extensionListUrl": "https://github.com/keiyoushi/extensions/raw/repo/index.pb"
-    }
-  ]
+  "stores": []
 }

@@ -60,7 +60,6 @@ class ExtensionStoresScreenModel(
                 it.copy(
                     dialog = when (it.dialog) {
                         is ExtensionStoreDialog.Create -> it.dialog.copy(processing = true)
-                        is ExtensionStoreDialog.Confirm -> it.dialog.copy(processing = true)
                         else -> it.dialog
                     },
                 )
@@ -75,10 +74,6 @@ class ExtensionStoresScreenModel(
                         it.copy(
                             dialog = when (it.dialog) {
                                 is ExtensionStoreDialog.Create -> it.dialog.copy(
-                                    processing = false,
-                                    errorMessage = throwable.message ?: "unknown error",
-                                )
-                                is ExtensionStoreDialog.Confirm -> it.dialog.copy(
                                     processing = false,
                                     errorMessage = throwable.message ?: "unknown error",
                                 )
@@ -113,17 +108,6 @@ class ExtensionStoresScreenModel(
         }
     }
 
-    fun addFromDeeplink(storeIndexUrl: String) {
-        updateSuccessState { state ->
-            state.copy(
-                dialog = ExtensionStoreDialog.Confirm(
-                    url = storeIndexUrl,
-                    alreadyExists = state.stores.any { it.indexUrl == storeIndexUrl },
-                ),
-            )
-        }
-    }
-
     fun showDialog(dialog: ExtensionStoreDialog) {
         updateSuccessState { state ->
             state.copy(dialog = dialog)
@@ -140,12 +124,6 @@ class ExtensionStoresScreenModel(
 sealed class ExtensionStoreDialog {
     data class Create(val processing: Boolean = false, val errorMessage: String? = null) : ExtensionStoreDialog()
     data class Delete(val store: ExtensionStore) : ExtensionStoreDialog()
-    data class Confirm(
-        val url: String,
-        val alreadyExists: Boolean = false,
-        val processing: Boolean = false,
-        val errorMessage: String? = null,
-    ) : ExtensionStoreDialog()
 }
 
 sealed class ExtensionStoreScreenState {

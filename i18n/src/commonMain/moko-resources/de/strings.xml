@@ -901,7 +901,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Dieses Erweiterungsdepot existiert bereits</string>
     <string name="extensionStoresScreen.addStore.processing">Verarbeite…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Depot-Index-URL</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Möchtest du dieses Erweiterungsdepot hinzufügen?</string>
     <string name="extensionStoresScreen.deleteStore.title">Erweiterungsdepot entfernen</string>
     <string name="extensionStoresScreen.deleteStore.body">Möchtest du das Erweiterungsdepot \"%1$s\" (%2$s) entfernen?</string>
     <string name="pref_webtoon_vertical_navigator">Vertikalen Navigatior für das Lesen langer Streifen verwenden</string>
