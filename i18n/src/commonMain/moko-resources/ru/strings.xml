@@ -902,7 +902,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Это хранилище расширений уже существует</string>
     <string name="extensionStoresScreen.addStore.processing">В процессе…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Хранить индекс URL-адреса</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Вы хотите добавить хранилище расширений ниже?</string>
     <string name="extensionStoresScreen.deleteStore.title">Удалить хранилище расширений</string>
     <string name="extensionStoresScreen.deleteStore.body">Вы хотите удалить хранилище расширений \"%1$s\" (%2$s)?</string>
     <string name="pref_webtoon_vertical_navigator_on_left">Разместить вертикальную навигацию с левой стороны</string>

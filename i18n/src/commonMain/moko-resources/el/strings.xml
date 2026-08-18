@@ -901,7 +901,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Αυτό το κατάστημα επεκτάσεων υπάρχει ήδη</string>
     <string name="extensionStoresScreen.addStore.processing">Επεξεργασία…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Ευρετήριο διευθύνσεων URL</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">Θέλετε να προσθέσετε το παρακάτω κατάστημα επεκτάσεων;</string>
     <string name="extensionStoresScreen.deleteStore.title">Κατάργηση καταστήματος επεκτάσεων</string>
     <string name="extensionStoresScreen.deleteStore.body">Θέλετε να καταργήσετε το κατάστημα επεκτάσεων \"%1$s\" (%2$s);</string>
     <string name="pref_webtoon_vertical_navigator">Χρησιμοποιήστε τον κάθετο πλοηγό για ανάγνωση μεγάλων λωρίδων</string>

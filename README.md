@@ -17,16 +17,20 @@ YomuDoom é um leitor Android para mangás, webtoons e quadrinhos. O projeto é 
 
 Baixe a versão mais recente na página de [Releases](https://github.com/YomuDoom/YomuDoom/releases). O YomuDoom requer Android 8.0 ou superior.
 
+Novas instalações não incluem lojas de extensões. O aplicativo pode ler arquivos locais e permite que o próprio usuário cadastre manualmente uma loja externa compatível sob sua responsabilidade.
+
 ### Desenvolvimento
 
 ```text
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:installDebug
+./gradlew lintRelease
+./gradlew assembleRelease -Penable-updater
 ```
 
 O código mantém a licença Apache 2.0 e a atribuição aos projetos originais utilizados como base.
 
-O YomuDoom mantém a Keiyoushi pré-configurada como loja de extensões selecionada pelo projeto. A loja, suas extensões e sua infraestrutura são independentes do YomuDoom. Integrações de trackers preservam clientes e callbacks do Mihon para compatibilidade.
+O YomuDoom não fornece, recomenda, mantém nem presta suporte a lojas, extensões ou provedores de conteúdo externos. Integrações de trackers preservam clientes e callbacks do Mihon para compatibilidade.
 
 ### Aviso
 
@@ -57,16 +61,20 @@ YomuDoom is an Android reader for manga, webtoons, comics, and similar content. 
 
 Download the latest version from the [Releases](https://github.com/YomuDoom/YomuDoom/releases) page. YomuDoom requires Android 8.0 or newer.
 
+New installations include no extension stores. The application can read local files and lets users manually configure a compatible external store under their own responsibility.
+
 ### Development
 
 ```text
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:installDebug
+./gradlew lintRelease
+./gradlew assembleRelease -Penable-updater
 ```
 
 The code keeps the Apache 2.0 license and attribution for the original projects used as its foundation.
 
-YomuDoom ships Keiyoushi as its project-selected, preconfigured extension store. The store, its extensions, and its infrastructure are independent from YomuDoom. Tracker integrations retain Mihon clients and callbacks for compatibility.
+YomuDoom does not provide, recommend, maintain, or support external stores, extensions, or content providers. Tracker integrations retain Mihon clients and callbacks for compatibility.
 
 ### Disclaimer
 

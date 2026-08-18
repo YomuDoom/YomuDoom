@@ -13,7 +13,7 @@ The main YomuDoom-specific areas are:
 - Product identity, Android application ID, launcher and notification artwork, onboarding, documentation, and GitHub release flow.
 - Consolidated source search, source selection and ordering, similar works, and local recommendations.
 - Reader Webtoon auto-scroll, touch cancellation, and contextual chapter resume.
-- Extension discovery, curated default store support, installation flow, startup caching, and NSFW filtering.
+- User-configured extension-store compatibility, individual installation flow, startup caching, and NSFW filtering.
 - Library, history, download, update, migration, and performance refinements.
 - HyperOS-aware onboarding permission detection and continuous status synchronization.
 
@@ -21,7 +21,7 @@ The complete path-by-path snapshot is maintained in [UPSTREAM_DIFF.md](./UPSTREA
 
 ## External compatibility
 
-YomuDoom preconfigures the independent [Keiyoushi extension store](https://keiyoushi.github.io) as a deliberate project curation choice. Keiyoushi, its repository, extensions, signing infrastructure, and services are not operated by YomuDoom.
+YomuDoom ships no extension store, catalog, or provider URL. Compatible third-party stores can be entered manually by the user. They are not operated, recommended, maintained, or supported by YomuDoom.
 
 Tracker integrations retain OAuth clients and `mihon://` callbacks inherited from Mihon so existing AniList, MyAnimeList, Shikimori, Bangumi, Kitsu, Hikka, and MangaBaka login flows continue to work. These compatibility identifiers are not YomuDoom-owned infrastructure.
 

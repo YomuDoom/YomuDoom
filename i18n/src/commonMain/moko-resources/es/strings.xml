@@ -895,7 +895,6 @@
     <string name="extensionStoresScreen.addStore.alreadyExists">Ya estás usando este listado de extensiones</string>
     <string name="extensionStoresScreen.addStore.processing">Procesando…</string>
     <string name="extensionStoresScreen.addStoreInput.inputLabel">Dirección URL del listado</string>
-    <string name="extensionStoresScreen.addStoreDeeplink.bodyText">¿Seguro que quieres añadir este listado de extensiones?</string>
     <string name="extensionStoresScreen.deleteStore.title">Quitar listado de extensiones</string>
     <string name="extensionStoresScreen.deleteStore.body">¿Seguro que quieres quitar el listado de extensiones «%1$s» (%2$s)?</string>
     <string name="pref_webtoon_vertical_navigator">Navegar de forma vertical al leer tiras largas</string>
