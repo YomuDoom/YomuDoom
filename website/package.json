@@ -46,12 +46,14 @@
   "type": "module",
   "overrides": {
     "sharp": "0.35.0",
-    "undici": "7.29.0"
+    "undici": "7.29.0",
+    "ws": "8.21.0"
   },
   "pnpm": {
     "overrides": {
       "sharp": "0.35.0",
-      "undici": "7.29.0"
+      "undici": "7.29.0",
+      "ws": "8.21.0"
     }
   },
   "allowScripts": {
