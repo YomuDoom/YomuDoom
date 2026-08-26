@@ -45,11 +45,13 @@
   },
   "type": "module",
   "overrides": {
-    "sharp": "0.35.0"
+    "sharp": "0.35.0",
+    "undici": "7.29.0"
   },
   "pnpm": {
     "overrides": {
-      "sharp": "0.35.0"
+      "sharp": "0.35.0",
+      "undici": "7.29.0"
     }
   },
   "allowScripts": {
