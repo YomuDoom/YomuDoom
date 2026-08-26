@@ -44,6 +44,14 @@
     "wrangler": "4.92.0"
   },
   "type": "module",
+  "overrides": {
+    "sharp": "0.35.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "sharp": "0.35.0"
+    }
+  },
   "allowScripts": {
     "esbuild@0.18.20": true,
     "esbuild@0.25.12": true,
