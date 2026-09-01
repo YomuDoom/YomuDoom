@@ -42,6 +42,7 @@ class OnboardingScreen : Screen() {
         }
 
         OnboardingScreen(
+            showAgeConfirmation = !shownOnboardingFlow,
             onComplete = finishOnboarding,
             onRestoreBackup = {
                 finishOnboarding()

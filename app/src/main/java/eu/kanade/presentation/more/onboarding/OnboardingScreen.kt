@@ -26,6 +26,7 @@ import tachiyomi.presentation.core.screens.InfoScreen
 
 @Composable
 fun OnboardingScreen(
+    showAgeConfirmation: Boolean,
     onComplete: () -> Unit,
     onRestoreBackup: () -> Unit,
     onOpenExtensions: () -> Unit,
@@ -33,17 +34,22 @@ fun OnboardingScreen(
     val slideDistance = rememberSlideDistance()
 
     var currentStep by rememberSaveable { mutableIntStateOf(0) }
-    val steps = remember {
-        listOf(
-            ThemeStep(),
-            StorageStep(),
-            PermissionStep(),
-            YomuDoomFeaturesStep(),
-            GuidesStep(
-                onRestoreBackup = onRestoreBackup,
-                onOpenExtensions = onOpenExtensions,
-            ),
-        )
+    val steps = remember(showAgeConfirmation) {
+        buildList {
+            if (showAgeConfirmation) {
+                add(AgeConfirmationStep())
+            }
+            add(ThemeStep())
+            add(StorageStep())
+            add(PermissionStep())
+            add(YomuDoomFeaturesStep())
+            add(
+                GuidesStep(
+                    onRestoreBackup = onRestoreBackup,
+                    onOpenExtensions = onOpenExtensions,
+                ),
+            )
+        }
     }
     val isLastStep = currentStep == steps.lastIndex
 

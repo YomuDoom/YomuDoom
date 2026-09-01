@@ -18,7 +18,7 @@ fun NsfwFilterIndicator(
     AssistChip(
         modifier = modifier,
         onClick = onClick,
-        label = { Text(text = stringResource(MR.strings.ext_nsfw_short)) },
+        label = { Text(text = stringResource(MR.strings.nsfw_filter_disabled)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.VisibilityOff,

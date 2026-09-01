@@ -1,5 +1,19 @@
 # YomuDoom Changelog
 
+## 0.21.2
+
+### Português (Brasil)
+
+- Pergunta a idade na primeira instalação para configurar a exibição de conteúdo +18.
+- Torna o estado do filtro +18 mais visível quando esse conteúdo está desativado.
+- Mantém a escolha de idade local ao dispositivo, sem incluí-la ou sobrescrevê-la em backups.
+
+### English
+
+- Asks for age on first install to configure whether 18+ content is shown.
+- Makes the 18+ filter state clearer when this content is disabled.
+- Keeps the age choice local to the device without including or overwriting it in backups.
+
 ## 0.21.1
 
 ### Português (Brasil)
