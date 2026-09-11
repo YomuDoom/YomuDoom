@@ -1,5 +1,13 @@
 # YomuDoom
 
+**YomuDoom** é um leitor de mangás, webtoons e quadrinhos gratuito e open source para Android (8.0+), baseado no Mihon.
+
+- 🌐 **Site Oficial / Official Website**: [yomudoom.github.io/YomuDoom](https://yomudoom.github.io/YomuDoom/)
+- 📦 **Download Oficial / Official Releases**: [GitHub Releases](https://github.com/YomuDoom/YomuDoom/releases/latest)
+- 💻 **Repositório Oficial / Source Code**: [github.com/YomuDoom/YomuDoom](https://github.com/YomuDoom/YomuDoom)
+
+---
+
 ## Português (Brasil)
 
 YomuDoom é um leitor Android para mangás, webtoons e quadrinhos. O projeto é baseado no Mihon, com identidade própria, melhorias de busca, leitura e organização da biblioteca.
@@ -15,7 +23,7 @@ YomuDoom é um leitor Android para mangás, webtoons e quadrinhos. O projeto é 
 
 ### Download
 
-Baixe a versão mais recente na página de [Releases](https://github.com/YomuDoom/YomuDoom/releases). O YomuDoom requer Android 8.0 ou superior.
+Baixe a versão mais recente na página oficial de [Releases](https://github.com/YomuDoom/YomuDoom/releases/latest) ou conheça os detalhes no [Site Oficial](https://yomudoom.github.io/YomuDoom/). O YomuDoom requer Android 8.0 ou superior.
 
 Novas instalações não incluem lojas de extensões. O aplicativo pode ler arquivos locais e permite que o próprio usuário cadastre manualmente uma loja externa compatível sob sua responsabilidade.
 
@@ -59,7 +67,7 @@ YomuDoom is an Android reader for manga, webtoons, comics, and similar content. 
 
 ### Download
 
-Download the latest version from the [Releases](https://github.com/YomuDoom/YomuDoom/releases) page. YomuDoom requires Android 8.0 or newer.
+Download the latest version from the official [Releases](https://github.com/YomuDoom/YomuDoom/releases/latest) page or explore the [Official Website](https://yomudoom.github.io/YomuDoom/). YomuDoom requires Android 8.0 or newer.
 
 New installations include no extension stores. The application can read local files and lets users manually configure a compatible external store under their own responsibility.
 

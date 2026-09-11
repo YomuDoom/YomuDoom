@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787453348032,
+      "tag": "0000_ordinary_matthew_murdock",
+      "breakpoints": true
+    }
+  ]
+}

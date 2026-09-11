@@ -428,6 +428,7 @@
     <string name="ext_nsfw_short">+18</string>
     <string name="parental_controls_info">Somente fontes corretamente marcadas como +18 podem ser bloqueadas automaticamente. Esta configuração é aplicada imediatamente.</string>
     <string name="content_blocked_nsfw">Este conteúdo está oculto porque o conteúdo +18 está desativado.</string>
+    <string name="nsfw_filter_disabled">Conteúdo +18 desativado</string>
     <string name="no_chapters_error">Nenhum capítulo encontrado</string>
     <string name="chapter_settings_updated">Configurações padrões de capítulo atualizadas</string>
     <string name="set_chapter_settings_as_default">Definir como padrão</string>
@@ -789,6 +790,12 @@
     <string name="onboarding_guides_sources_description">Instale as extensões de fontes recomendadas antes de procurar mangás.</string>
     <string name="onboarding_guides_install_sources">Instalar fontes recomendadas</string>
     <string name="onboarding_action_skip">Pular</string>
+    <string name="onboarding_age_title">Conteúdo para maiores de 18 anos</string>
+    <string name="onboarding_age_question">Você tem 18 anos ou mais?</string>
+    <string name="onboarding_age_description">Sua escolha define se fontes e conteúdos corretamente marcados como +18 serão exibidos. Você poderá alterar isso depois nas Configurações.</string>
+    <string name="onboarding_age_adult">Tenho 18 anos ou mais</string>
+    <string name="onboarding_age_minor">Tenho menos de 18 anos</string>
+    <string name="onboarding_age_disclaimer">Esta é uma autodeclaração; o YomuDoom não verifica sua idade.</string>
     <string name="onboarding_action_next">Próximo</string>
     <string name="onboarding_description">Vamos definir algumas coisas primeiro. Você sempre pode fazer alterações nas configurações depois também.</string>
     <string name="onboarding_yomudoom_features_title">Recursos do YomuDoom</string>

@@ -188,6 +188,12 @@
     <string name="onboarding_action_next">Next</string>
     <string name="onboarding_action_finish">Get started</string>
     <string name="onboarding_action_skip">Skip</string>
+    <string name="onboarding_age_title">Content for adults</string>
+    <string name="onboarding_age_question">Are you 18 or older?</string>
+    <string name="onboarding_age_description">Your choice determines whether sources and content correctly marked as 18+ are shown. You can change this later in Settings.</string>
+    <string name="onboarding_age_adult">I am 18 or older</string>
+    <string name="onboarding_age_minor">I am under 18</string>
+    <string name="onboarding_age_disclaimer">This is a self-declaration; YomuDoom does not verify your age.</string>
     <string name="onboarding_storage_info">Select a folder where %1$s will store chapter downloads, backups, and more.\n\nA dedicated folder is recommended.\n\nSelected folder: %2$s</string>
     <string name="onboarding_storage_action_select">Select a folder</string>
     <string name="onboarding_storage_selection_required">A folder must be selected</string>
@@ -290,6 +296,7 @@
     <string name="pref_show_nsfw_source">Allow 18+ sources and content</string>
     <string name="parental_controls_info">Only sources correctly marked as 18+ can be blocked automatically. This setting applies immediately.</string>
     <string name="content_blocked_nsfw">This content is hidden because 18+ content is disabled.</string>
+    <string name="nsfw_filter_disabled">18+ content off</string>
 
     <string name="relative_time_today">Today</string>
 

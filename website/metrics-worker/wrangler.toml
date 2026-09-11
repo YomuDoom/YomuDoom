@@ -1,0 +1,11 @@
+name = "yomudoom-metrics"
+main = "src/index.ts"
+compatibility_date = "2026-08-24"
+
+[vars]
+ALLOWED_ORIGIN = "https://yomudoom.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yomudoom-metrics"
+database_id = "REPLACE_AFTER_CREATION"

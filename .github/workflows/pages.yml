@@ -1,10 +1,10 @@
-name: Publish privacy policy
+name: Publish YomuDoom website
 
 on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'website/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -26,9 +26,25 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+      - name: Build static website
+        working-directory: website
+        env:
+          STATIC_EXPORT: true
+          NEXT_PUBLIC_BASE_PATH: /YomuDoom
+          NEXT_PUBLIC_SITE_ORIGIN: https://yomudoom.github.io
+          NEXT_PUBLIC_METRICS_URL: ${{ vars.YOMUDOOM_METRICS_URL }}
+        run: npm run build -- --prerender-all
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
-          path: docs
+          path: website/dist/client
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

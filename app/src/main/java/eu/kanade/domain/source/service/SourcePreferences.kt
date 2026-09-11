@@ -36,7 +36,7 @@ class SourcePreferences(
         -1,
     )
 
-    val showNsfwSource: Preference<Boolean> = preferenceStore.getBoolean("show_nsfw_source", false)
+    val showNsfwSource: Preference<Boolean> = preferenceStore.getBoolean(SHOW_NSFW_SOURCE_PREF_KEY, false)
 
     val migrationSortingMode: Preference<SetMigrateSorting.Mode> = preferenceStore.getEnum(
         "pref_migration_sorting",
@@ -91,6 +91,10 @@ class SourcePreferences(
         "migration_hide_without_updates",
         false,
     )
+
+    companion object {
+        const val SHOW_NSFW_SOURCE_PREF_KEY = "show_nsfw_source"
+    }
 }
 
 enum class GlobalSearchMode {
