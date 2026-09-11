@@ -9,7 +9,15 @@ const description = "Política de privacidade do aplicativo e do site oficial do
 export const metadata: Metadata = {
   title,
   description,
-  openGraph: { title, description, images: [] },
+  alternates: {
+    canonical: "https://yomudoom.github.io/YomuDoom/privacy/",
+  },
+  openGraph: {
+    title,
+    description,
+    url: "https://yomudoom.github.io/YomuDoom/privacy/",
+    images: [],
+  },
   twitter: { title, description, images: [] },
 };
 
