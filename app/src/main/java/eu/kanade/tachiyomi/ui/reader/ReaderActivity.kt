@@ -274,7 +274,7 @@ class ReaderActivity : BaseActivity() {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (!state.menuVisible && showPageNumber) {
+            if (!state.menuVisible && showPageNumber && !autoScrollRunning) {
                 ReaderPageIndicator(
                     currentPage = state.currentPage,
                     totalPages = state.totalPages,
@@ -611,6 +611,7 @@ class ReaderActivity : BaseActivity() {
         autoScrollSpeed = speedDpPerSecond
         readerPreferences.autoScrollSpeedDpPerSecond.set(speedDpPerSecond)
         showAutoScrollDialog = false
+        hideMenu()
         (viewModel.state.value.viewer as? WebtoonViewer)?.startAutoScroll(speedDpPerSecond)
     }
 

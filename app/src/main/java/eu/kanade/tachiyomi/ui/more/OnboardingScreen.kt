@@ -3,8 +3,10 @@ package eu.kanade.tachiyomi.ui.more
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
@@ -28,21 +30,25 @@ class OnboardingScreen : Screen() {
         val scope = rememberCoroutineScope()
 
         val basePreferences = remember { Injekt.get<BasePreferences>() }
-        val shownOnboardingFlow by basePreferences.shownOnboardingFlow.collectAsState()
+        val initialShownOnboardingFlow = remember { basePreferences.shownOnboardingFlow.get() }
+        var isFinishing by remember { mutableStateOf(false) }
 
         val finishOnboarding: () -> Unit = {
-            basePreferences.shownOnboardingFlow.set(true)
-            navigator.pop()
+            if (!isFinishing) {
+                isFinishing = true
+                basePreferences.shownOnboardingFlow.set(true)
+                navigator.pop()
+            }
         }
 
         val restoreSettingKey = stringResource(SettingsDataScreen.restorePreferenceKeyString)
 
-        BackHandler(enabled = !shownOnboardingFlow) {
+        BackHandler(enabled = !initialShownOnboardingFlow && !isFinishing) {
             // Prevent exiting if onboarding hasn't been completed
         }
 
         OnboardingScreen(
-            showAgeConfirmation = !shownOnboardingFlow,
+            showAgeConfirmation = !initialShownOnboardingFlow,
             onComplete = finishOnboarding,
             onRestoreBackup = {
                 finishOnboarding()
