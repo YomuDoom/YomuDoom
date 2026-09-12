@@ -12,7 +12,7 @@ const STRIPE_URL = "https://donate.stripe.com/9B6eVc41KdyJ3Qg4yN0Fi00";
 const PIX_KEY = "46da2cde-87ae-4a33-bc58-be969767dfa9";
 const SITE_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const METRICS_URL = process.env.NEXT_PUBLIC_METRICS_URL ?? "";
-const PRIVACY_PATH = SITE_BASE_PATH ? "/privacy.html" : "/privacy";
+const PRIVACY_PATH = "/privacy/";
 
 function sitePath(path: string) {
   return `${SITE_BASE_PATH}${path}`;
