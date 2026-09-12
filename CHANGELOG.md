@@ -1,5 +1,19 @@
 # YomuDoom Changelog
 
+## 0.21.3
+
+### Português (Brasil)
+
+- Oculta controles, barras e indicador de páginas durante a rolagem automática (Auto Scroll) para uma leitura contínua e imersiva.
+- Permite pausar o Auto Scroll com um toque na tela sem avançar ou recuar páginas.
+- Corrige fechamento inesperado (crash) ao concluir o guia de introdução ou ao navegar para extensões.
+
+### English
+
+- Hides reader controls, app bars, and page indicators while Auto Scroll is running for an unobstructed reading experience.
+- Pauses Auto Scroll smoothly on screen touch without triggering accidental page turns.
+- Fixes an unexpected crash when completing onboarding or navigating to extensions.
+
 ## 0.21.2
 
 ### Português (Brasil)
