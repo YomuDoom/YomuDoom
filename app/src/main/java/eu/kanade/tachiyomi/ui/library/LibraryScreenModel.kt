@@ -747,6 +747,7 @@ class LibraryScreenModel(
 
     companion object {
         private val recoveryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
         @Volatile
         private var isRecoveringCovers = false
     }
