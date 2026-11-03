@@ -6,12 +6,16 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import logcat.LogPriority
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -29,6 +33,7 @@ data class AvailableCover(
 object OnlineCoverFetcher {
 
     private val json = Json { ignoreUnknownKeys = true }
+    private const val USER_AGENT = "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)"
 
     suspend fun fetchStreamFromUrl(url: String): InputStream? = withContext(Dispatchers.IO) {
         val networkHelper: NetworkHelper = Injekt.get()
@@ -36,10 +41,7 @@ object OnlineCoverFetcher {
         try {
             val req = Request.Builder()
                 .url(url)
-                .header(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                )
+                .header("User-Agent", USER_AGENT)
                 .build()
             val resp = client.newCall(req).execute()
             if (resp.isSuccessful) {
@@ -99,100 +101,92 @@ object OnlineCoverFetcher {
         if (queries.isEmpty()) return@withContext results
 
         coroutineScope {
-            val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+            val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
             val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+            val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
 
-            results.addAll(mangaDexDeferred.await())
+            results.addAll(anilistDeferred.await())
             results.addAll(kitsuDeferred.await())
+            results.addAll(mangaDexDeferred.await())
         }
 
         results.distinctBy { it.url }
     }
 
-    private fun fetchMangaDexCovers(queries: List<String>): List<AvailableCover> {
+    private fun fetchAniListCovers(queries: List<String>): List<AvailableCover> {
         val networkHelper: NetworkHelper = Injekt.get()
         val client = networkHelper.client
         val covers = mutableListOf<AvailableCover>()
 
+        val graphQuery = """
+            query (${'$'}search: String) {
+              Page(page: 1, perPage: 3) {
+                media(search: ${'$'}search, type: MANGA) {
+                  id
+                  title {
+                    english
+                    romaji
+                  }
+                  coverImage {
+                    extraLarge
+                    large
+                  }
+                  format
+                }
+              }
+            }
+        """.trimIndent()
+
         for (query in queries) {
             if (query.isBlank()) continue
             try {
-                val encoded = URLEncoder.encode(query, "UTF-8")
-                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=5" +
-                    "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic"
-                val searchReq = Request.Builder()
-                    .url(searchUrl)
-                    .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
+                val payload = buildJsonObject {
+                    put("query", graphQuery)
+                    put(
+                        "variables",
+                        buildJsonObject {
+                            put("search", query)
+                        },
+                    )
+                }.toString()
+
+                val req = Request.Builder()
+                    .url("https://graphql.anilist.co")
+                    .header("User-Agent", USER_AGENT)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .post(payload.toRequestBody("application/json".toMediaType()))
                     .build()
-                val searchResp = client.newCall(searchReq).execute()
-                if (searchResp.isSuccessful) {
-                    val bodyStr = searchResp.body.string()
+
+                val resp = client.newCall(req).execute()
+                if (resp.isSuccessful) {
+                    val bodyStr = resp.body.string()
                     val root = json.parseToJsonElement(bodyStr).jsonObject
-                    val mangaList = root["data"]?.jsonArray.orEmpty()
+                    val mediaList = root["data"]?.jsonObject?.get("Page")?.jsonObject?.get("media")?.jsonArray.orEmpty()
 
-                    for (mangaElem in mangaList) {
-                        val mangaObj = mangaElem.jsonObject
-                        val mangaId = mangaObj["id"]?.jsonPrimitive?.contentOrNull ?: continue
-                        val covUrl = "https://api.mangadex.org/cover?manga[]=$mangaId&limit=100&order[volume]=asc"
-                        val covReq = Request.Builder()
-                            .url(covUrl)
-                            .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
-                            .build()
-                        val covResp = client.newCall(covReq).execute()
-                        if (covResp.isSuccessful) {
-                            val covBodyStr = covResp.body.string()
-                            val covRoot = json.parseToJsonElement(covBodyStr).jsonObject
-                            val covList = covRoot["data"]?.jsonArray.orEmpty()
+                    for (m in mediaList) {
+                        val mObj = m.jsonObject
+                        val titleObj = mObj["title"]?.jsonObject
+                        val englishTitle = titleObj?.get("english")?.jsonPrimitive?.contentOrNull
+                        val romajiTitle = titleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+                        val coverObj = mObj["coverImage"]?.jsonObject
+                        val imgUrl = coverObj?.get("extraLarge")?.jsonPrimitive?.contentOrNull
+                            ?: coverObj?.get("large")?.jsonPrimitive?.contentOrNull
 
-                            data class ParsedMangaDexCover(
-                                val url: String,
-                                val volume: String?,
-                                val volumeNum: Float?,
-                                val locale: String?,
-                            )
-
-                            val parsedCovers = mutableListOf<ParsedMangaDexCover>()
-                            for (c in covList) {
-                                val cObj = c.jsonObject
-                                val attr = cObj["attributes"]?.jsonObject ?: continue
-                                val fileName = attr["fileName"]?.jsonPrimitive?.contentOrNull ?: continue
-                                val volume = attr["volume"]?.jsonPrimitive?.contentOrNull
-                                val locale = attr["locale"]?.jsonPrimitive?.contentOrNull
-                                val volumeNum = volume?.toFloatOrNull()
-                                val imgUrl = "https://uploads.mangadex.org/covers/$mangaId/$fileName.512.jpg"
-                                parsedCovers.add(ParsedMangaDexCover(imgUrl, volume, volumeNum, locale))
-                            }
-
-                            // Ordena capas por volume
-                            val sorted = parsedCovers.sortedWith(
-                                compareBy(
-                                    { it.volumeNum ?: Float.MAX_VALUE },
-                                    { it.volume ?: "" },
+                        if (!imgUrl.isNullOrBlank()) {
+                            val desc = englishTitle ?: romajiTitle ?: "Poster"
+                            covers.add(
+                                AvailableCover(
+                                    url = imgUrl,
+                                    description = desc,
+                                    source = "AniList",
+                                    data = imgUrl,
                                 ),
                             )
-
-                            for (item in sorted) {
-                                val desc = if (!item.volume.isNullOrBlank()) "Vol. ${item.volume}" else "Capa"
-                                val finalDesc = if (!item.locale.isNullOrBlank() && item.locale != "ja") {
-                                    "$desc (${item.locale})"
-                                } else {
-                                    desc
-                                }
-                                covers.add(
-                                    AvailableCover(
-                                        url = item.url,
-                                        description = finalDesc,
-                                        source = "MangaDex",
-                                        data = item.url,
-                                    ),
-                                )
-                            }
                         }
                     }
 
-                    if (covers.isNotEmpty()) {
-                        break
-                    }
+                    if (covers.isNotEmpty()) break
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e)
@@ -210,10 +204,10 @@ object OnlineCoverFetcher {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
-                val url = "https://kitsu.io/api/edge/manga?filter%5Btext%5D=$encoded&page%5Blimit%5D=10"
+                val url = "https://kitsu.io/api/edge/manga?filter%5Btext%5D=$encoded&page%5Blimit%5D=3"
                 val req = Request.Builder()
                     .url(url)
-                    .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
+                    .header("User-Agent", USER_AGENT)
                     .header("Accept", "application/vnd.api+json")
                     .build()
                 val resp = client.newCall(req).execute()
@@ -249,9 +243,68 @@ object OnlineCoverFetcher {
                         }
                     }
 
-                    if (covers.isNotEmpty()) {
-                        break
+                    if (covers.isNotEmpty()) break
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.WARN, e)
+            }
+        }
+        return covers
+    }
+
+    private fun fetchMangaDexCovers(queries: List<String>): List<AvailableCover> {
+        val networkHelper: NetworkHelper = Injekt.get()
+        val client = networkHelper.client
+        val covers = mutableListOf<AvailableCover>()
+
+        for (query in queries) {
+            if (query.isBlank()) continue
+            try {
+                val encoded = URLEncoder.encode(query, "UTF-8")
+                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=3&includes[]=cover_art" +
+                    "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic"
+                val searchReq = Request.Builder()
+                    .url(searchUrl)
+                    .header("User-Agent", USER_AGENT)
+                    .build()
+                val searchResp = client.newCall(searchReq).execute()
+                if (searchResp.isSuccessful) {
+                    val bodyStr = searchResp.body.string()
+                    val root = json.parseToJsonElement(bodyStr).jsonObject
+                    val mangaList = root["data"]?.jsonArray.orEmpty()
+
+                    for (mangaElem in mangaList) {
+                        val mangaObj = mangaElem.jsonObject
+                        val mangaId = mangaObj["id"]?.jsonPrimitive?.contentOrNull ?: continue
+                        val attr = mangaObj["attributes"]?.jsonObject
+                        val titleMap = attr?.get("title")?.jsonObject
+                        val mangaTitle = titleMap?.values?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "Capa oficial"
+
+                        val rels = mangaObj["relationships"]?.jsonArray.orEmpty()
+                        var coverFile: String? = null
+                        for (rel in rels) {
+                            val relObj = rel.jsonObject
+                            if (relObj["type"]?.jsonPrimitive?.contentOrNull == "cover_art") {
+                                val relAttr = relObj["attributes"]?.jsonObject
+                                coverFile = relAttr?.get("fileName")?.jsonPrimitive?.contentOrNull
+                                if (!coverFile.isNullOrBlank()) break
+                            }
+                        }
+
+                        if (!coverFile.isNullOrBlank()) {
+                            val imgUrl = "https://uploads.mangadex.org/covers/$mangaId/$coverFile.512.jpg"
+                            covers.add(
+                                AvailableCover(
+                                    url = imgUrl,
+                                    description = mangaTitle,
+                                    source = "MangaDex",
+                                    data = imgUrl,
+                                ),
+                            )
+                        }
                     }
+
+                    if (covers.isNotEmpty()) break
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e)

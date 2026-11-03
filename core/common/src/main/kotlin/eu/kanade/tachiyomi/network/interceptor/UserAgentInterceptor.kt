@@ -9,12 +9,18 @@ class UserAgentInterceptor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
+        val host = originalRequest.url.host
 
-        return if (originalRequest.header("User-Agent").isNullOrEmpty()) {
+        return if (host.contains("mangadex.org", ignoreCase = true)) {
             val newRequest = originalRequest
                 .newBuilder()
-                .removeHeader("User-Agent")
-                .addHeader("User-Agent", defaultUserAgentProvider())
+                .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
+                .build()
+            chain.proceed(newRequest)
+        } else if (originalRequest.header("User-Agent").isNullOrEmpty()) {
+            val newRequest = originalRequest
+                .newBuilder()
+                .header("User-Agent", defaultUserAgentProvider())
                 .build()
             chain.proceed(newRequest)
         } else {
