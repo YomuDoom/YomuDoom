@@ -1,5 +1,19 @@
 # YomuDoom Changelog
 
+## 0.21.3
+
+### Português (Brasil)
+
+- Exibe barra de progresso em tempo real na notificação durante a recuperação de capas ausentes em massa na biblioteca.
+- Adiciona opção para visualizar e selecionar capas alternativas diretamente na tela da obra (capas de volumes do MangaDex e pôsteres do Kitsu).
+- Permite trocar ou definir a capa da obra facilmente pelo menu da obra, pelo diálogo de visualização da capa ou no painel de capa ausente.
+
+### English
+
+- Displays a real-time progress bar in notification during mass recovery of missing covers in the library.
+- Adds option to browse and select alternative covers directly from the manga screen (volume covers from MangaDex and posters from Kitsu).
+- Allows changing or setting the manga cover easily from the manga menu, the full cover dialog, or the missing cover panel.
+
 ## 0.21.2
 
 ### Português (Brasil)

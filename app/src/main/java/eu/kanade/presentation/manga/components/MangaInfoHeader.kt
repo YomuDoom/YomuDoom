@@ -128,6 +128,7 @@ fun MangaInfoBox(
     doSearch: (query: String, global: Boolean) -> Unit,
     onEditCoverClick: (() -> Unit)? = null,
     onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClick: (() -> Unit)? = null,
     onMigrateClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -167,6 +168,7 @@ fun MangaInfoBox(
                     onCoverClick = onCoverClick,
                     onEditCoverClick = onEditCoverClick,
                     onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                    onAvailableCoversClick = onAvailableCoversClick,
                     onMigrateClick = onMigrateClick,
                     doSearch = doSearch,
                 )
@@ -179,6 +181,7 @@ fun MangaInfoBox(
                     onCoverClick = onCoverClick,
                     onEditCoverClick = onEditCoverClick,
                     onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                    onAvailableCoversClick = onAvailableCoversClick,
                     onMigrateClick = onMigrateClick,
                     doSearch = doSearch,
                 )
@@ -362,6 +365,7 @@ private fun CoverFixPanel(
     modifier: Modifier = Modifier,
     isFetchingCover: Boolean,
     onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)?,
+    onAvailableCoversClick: (() -> Unit)?,
     onMigrateClick: (() -> Unit)?,
     onSuccess: () -> Unit,
     onLoadingChange: (Boolean) -> Unit,
@@ -371,8 +375,32 @@ private fun CoverFixPanel(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (onFetchOnlineCoverClick != null) {
+        if (onAvailableCoversClick != null) {
             FilledTonalButton(
+                onClick = onAvailableCoversClick,
+                enabled = !isFetchingCover,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Photo,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(MR.strings.action_available_covers),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
+
+        if (onFetchOnlineCoverClick != null) {
+            OutlinedButton(
                 onClick = {
                     if (!isFetchingCover) {
                         onLoadingChange(true)
@@ -384,17 +412,12 @@ private fun CoverFixPanel(
                 },
                 enabled = !isFetchingCover,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 if (isFetchingCover) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -447,6 +470,7 @@ private fun MangaAndSourceTitlesLarge(
     onCoverClick: () -> Unit,
     onEditCoverClick: (() -> Unit)? = null,
     onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClick: (() -> Unit)? = null,
     onMigrateClick: (() -> Unit)? = null,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
@@ -468,12 +492,13 @@ private fun MangaAndSourceTitlesLarge(
             onClick = onCoverClick,
             onError = { isCoverError = true },
         )
-        if (isCoverError && (onFetchOnlineCoverClick != null || onMigrateClick != null)) {
+        if (isCoverError && (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)) {
             Spacer(modifier = Modifier.height(12.dp))
             CoverFixPanel(
                 modifier = Modifier.fillMaxWidth(0.65f),
                 isFetchingCover = isFetchingCover,
                 onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                onAvailableCoversClick = onAvailableCoversClick,
                 onMigrateClick = onMigrateClick,
                 onSuccess = { isCoverError = false },
                 onLoadingChange = { isFetchingCover = it },
@@ -502,6 +527,7 @@ private fun MangaAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     onEditCoverClick: (() -> Unit)? = null,
     onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClick: (() -> Unit)? = null,
     onMigrateClick: (() -> Unit)? = null,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
@@ -544,12 +570,13 @@ private fun MangaAndSourceTitlesSmall(
             }
         }
 
-        if (isCoverError && (onFetchOnlineCoverClick != null || onMigrateClick != null)) {
+        if (isCoverError && (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)) {
             Spacer(modifier = Modifier.height(12.dp))
             CoverFixPanel(
                 modifier = Modifier.fillMaxWidth(),
                 isFetchingCover = isFetchingCover,
                 onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                onAvailableCoversClick = onAvailableCoversClick,
                 onMigrateClick = onMigrateClick,
                 onSuccess = { isCoverError = false },
                 onLoadingChange = { isFetchingCover = it },

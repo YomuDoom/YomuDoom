@@ -1138,4 +1138,12 @@
     <string name="cover_check_none_missing">All entries already have covers.</string>
     <string name="cover_check_fetching_mass">Recovering missing covers in background…</string>
     <string name="cover_check_mass_result">%1$d of %2$d covers recovered</string>
+    <string name="cover_recovery_notification_title">Recovering missing covers</string>
+    <string name="cover_recovery_notification_progress">%1$d of %2$d</string>
+    <string name="cover_recovery_in_progress">Cover recovery is already in progress.</string>
+    <string name="action_available_covers">Available covers</string>
+    <string name="available_covers_dialog_title">Available covers</string>
+    <string name="available_covers_dialog_subtitle">Select an image to set as the cover</string>
+    <string name="available_covers_fetching">Searching available covers…</string>
+    <string name="available_covers_empty">No available covers found for this title.</string>
 </resources>

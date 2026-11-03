@@ -183,6 +183,41 @@ class MangaCoverScreenModel(
         }
     }
 
+    fun setCustomCoverFromUrl(context: Context, url: String, onComplete: ((Boolean) -> Unit)? = null) {
+        val manga = state.value ?: run {
+            onComplete?.invoke(false)
+            return
+        }
+        screenModelScope.launchIO {
+            try {
+                val stream = OnlineCoverFetcher.fetchStreamFromUrl(url)
+                if (stream != null) {
+                    stream.use {
+                        manga.editCover(Injekt.get(), it, updateManga, coverCache)
+                    }
+                    withUIContext {
+                        notifyCoverUpdated(context)
+                        onComplete?.invoke(true)
+                    }
+                } else {
+                    withUIContext {
+                        snackbarHostState.showSnackbar(
+                            context.stringResource(MR.strings.notification_cover_update_failed),
+                            withDismissAction = true,
+                        )
+                        onComplete?.invoke(false)
+                    }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                withUIContext {
+                    notifyFailedCoverUpdate(context, e)
+                    onComplete?.invoke(false)
+                }
+            }
+        }
+    }
+
     private fun notifyCoverUpdated(context: Context) {
         screenModelScope.launch {
             snackbarHostState.showSnackbar(

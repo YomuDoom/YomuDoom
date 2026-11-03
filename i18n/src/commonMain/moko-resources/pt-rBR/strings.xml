@@ -995,4 +995,12 @@
     <string name="cover_check_none_missing">Todas as obras já possuem capas salvas.</string>
     <string name="cover_check_fetching_mass">Recuperando capas ausentes em segundo plano…</string>
     <string name="cover_check_mass_result">%1$d de %2$d capas recuperadas</string>
+    <string name="cover_recovery_notification_title">Recuperando capas ausentes</string>
+    <string name="cover_recovery_notification_progress">%1$d de %2$d</string>
+    <string name="cover_recovery_in_progress">A recuperação de capas já está em andamento.</string>
+    <string name="action_available_covers">Capas disponíveis</string>
+    <string name="available_covers_dialog_title">Capas disponíveis</string>
+    <string name="available_covers_dialog_subtitle">Selecione uma imagem para definir como capa</string>
+    <string name="available_covers_fetching">Buscando capas disponíveis…</string>
+    <string name="available_covers_empty">Nenhuma capa encontrada para esta obra.</string>
 </resources>

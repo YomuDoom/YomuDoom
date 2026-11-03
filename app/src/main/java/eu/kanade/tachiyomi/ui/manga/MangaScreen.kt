@@ -35,6 +35,7 @@ import eu.kanade.presentation.manga.ChapterSettingsDialog
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.presentation.manga.MangaScreen
+import eu.kanade.presentation.manga.components.AvailableCoversDialog
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
 import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
@@ -180,6 +181,7 @@ class MangaScreen(
             onFetchOnlineCoverClicked = { onComplete ->
                 coverScreenModel.fetchOnlineCover(context, onComplete)
             },
+            onAvailableCoversClicked = screenModel::showAvailableCoversDialog,
             onShareClicked = { shareManga(context, screenModel.manga, screenModel.source) }.takeIf { isHttpSource },
             onDownloadActionClicked = screenModel::runDownloadAction.takeIf { !successState.source.isLocalOrStub() },
             onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.manga.favorite },
@@ -307,11 +309,25 @@ class MangaScreen(
                                 EditCoverAction.DELETE -> coverScreenModel.deleteCustomCover(context)
                             }
                         },
+                        onAvailableCoversClick = screenModel::showAvailableCoversDialog,
                         onDismissRequest = onDismissRequest,
                     )
                 } else {
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
+            }
+            MangaScreenModel.Dialog.AvailableCovers -> {
+                AvailableCoversDialog(
+                    manga = successState.manga,
+                    onDismissRequest = onDismissRequest,
+                    onSelectCover = { cover ->
+                        coverScreenModel.setCustomCoverFromUrl(context, cover.url) { success ->
+                            if (success) {
+                                onDismissRequest()
+                            }
+                        }
+                    },
+                )
             }
             is MangaScreenModel.Dialog.SetFetchInterval -> {
                 SetIntervalDialog(

@@ -1103,10 +1103,15 @@ class MangaScreenModel(
         data object SettingsSheet : Dialog
         data object TrackSheet : Dialog
         data object FullCover : Dialog
+        data object AvailableCovers : Dialog
     }
 
     fun dismissDialog() {
         updateSuccessState { it.copy(dialog = null) }
+    }
+
+    fun showAvailableCoversDialog() {
+        updateSuccessState { it.copy(dialog = Dialog.AvailableCovers) }
     }
 
     fun showDeleteChapterDialog(chapters: List<Chapter>) {
