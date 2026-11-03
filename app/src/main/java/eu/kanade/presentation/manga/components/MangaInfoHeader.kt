@@ -492,7 +492,9 @@ private fun MangaAndSourceTitlesLarge(
             onClick = onCoverClick,
             onError = { isCoverError = true },
         )
-        if (isCoverError && (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)) {
+        if (isCoverError &&
+            (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)
+        ) {
             Spacer(modifier = Modifier.height(12.dp))
             CoverFixPanel(
                 modifier = Modifier.fillMaxWidth(0.65f),
@@ -570,7 +572,9 @@ private fun MangaAndSourceTitlesSmall(
             }
         }
 
-        if (isCoverError && (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)) {
+        if (isCoverError &&
+            (onFetchOnlineCoverClick != null || onAvailableCoversClick != null || onMigrateClick != null)
+        ) {
             Spacer(modifier = Modifier.height(12.dp))
             CoverFixPanel(
                 modifier = Modifier.fillMaxWidth(),

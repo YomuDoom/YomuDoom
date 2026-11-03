@@ -247,7 +247,10 @@ fun AvailableCoversDialog(
                                                             color = MaterialTheme.colorScheme.onPrimary,
                                                             fontSize = 9.sp,
                                                             fontWeight = FontWeight.Medium,
-                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                            modifier = Modifier.padding(
+                                                                horizontal = 4.dp,
+                                                                vertical = 1.dp,
+                                                            ),
                                                         )
                                                     }
                                                 }
