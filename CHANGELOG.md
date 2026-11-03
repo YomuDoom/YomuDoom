@@ -1,5 +1,21 @@
 # YomuDoom Changelog
 
+## 0.21.7
+
+### Português (Brasil)
+
+- Reformula a busca de Capas Disponíveis trazendo apenas artes oficiais distintas (Capa original da Fonte, AniList, Kitsu e capa principal do MangaDex).
+- Remove a iteração de centenas de volumes/capítulos individuais quebrados.
+- Integra a API GraphQL do AniList para obter pôsteres oficiais em alta resolução.
+- Corrige bloqueio de carregamento de imagens do MangaDex aplicando User-Agent dedicado no cliente de rede.
+
+### English
+
+- Overhauls Available Covers search to only return distinct official cover arts (Source original cover, AniList, Kitsu, and MangaDex main cover).
+- Removes the repetitive iteration of hundreds of individual broken volume/chapter covers.
+- Integrates AniList GraphQL API for high-resolution official posters.
+- Fixes MangaDex image loading blocks by applying a dedicated User-Agent in the network client.
+
 ## 0.21.6
 
 ### Português (Brasil)
