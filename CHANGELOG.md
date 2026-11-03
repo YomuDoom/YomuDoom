@@ -1,5 +1,19 @@
 # YomuDoom Changelog
 
+## 0.21.6
+
+### Português (Brasil)
+
+- Corrige o download de atualizações no aplicativo garantindo o reconhecimento de APKs universais nos lançamentos do GitHub.
+- Exibe barra de progresso em tempo real (0% a 100%) no diálogo de atualização ao clicar em baixar.
+- Abre automaticamente a tela do instalador de pacotes do Android assim que o download do APK é finalizado.
+
+### English
+
+- Fixes in-app update downloads by ensuring universal APKs from GitHub releases are properly recognized.
+- Displays a real-time progress bar (0% to 100%) inside the update dialog when downloading starts.
+- Automatically launches the Android package installer prompt as soon as the APK download finishes.
+
 ## 0.21.5
 
 ### Português (Brasil)
