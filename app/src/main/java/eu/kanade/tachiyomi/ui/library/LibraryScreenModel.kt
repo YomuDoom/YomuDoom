@@ -26,8 +26,6 @@ import eu.kanade.tachiyomi.util.OnlineCoverFetcher
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.removeCovers
-import logcat.LogPriority
-import tachiyomi.core.common.util.system.logcat
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -41,14 +39,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import logcat.LogPriority
 import mihon.core.common.utils.mutate
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
-import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.i18n.MR
 import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -70,6 +69,7 @@ import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracksPerManga
 import tachiyomi.domain.track.model.Track
+import tachiyomi.i18n.MR
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -743,8 +743,10 @@ class LibraryScreenModel(
             try {
                 val allManga = getLibraryManga.await().map { it.manga }
                 val missingCovers = allManga.filter { manga ->
-                    !coverCache.getCustomCoverFile(manga.id).exists() &&
-                        (manga.thumbnailUrl.isNullOrBlank() || coverCache.getCoverFile(manga.thumbnailUrl)?.let { it.exists() && it.length() > 0 } != true)
+                    val customCoverExists = coverCache.getCustomCoverFile(manga.id).exists()
+                    val standardCoverValid = !manga.thumbnailUrl.isNullOrBlank() &&
+                        coverCache.getCoverFile(manga.thumbnailUrl)?.let { it.exists() && it.length() > 0 } == true
+                    !customCoverExists && !standardCoverValid
                 }
 
                 if (missingCovers.isEmpty()) {
@@ -769,7 +771,12 @@ class LibraryScreenModel(
                     }
                 }
 
-                onShowSnackbar(context.stringResource(MR.strings.cover_check_mass_result, successCount, missingCovers.size))
+                val resultMessage = context.stringResource(
+                    MR.strings.cover_check_mass_result,
+                    successCount,
+                    missingCovers.size,
+                )
+                onShowSnackbar(resultMessage)
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
                 onShowSnackbar(e.message ?: "Error")
