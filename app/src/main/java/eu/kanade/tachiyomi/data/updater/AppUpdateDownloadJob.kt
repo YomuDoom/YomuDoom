@@ -169,7 +169,7 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
                 }
                 context.startActivity(intent)
             } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e) { "Failed to launch package installer" }
+                logcat(LogPriority.ERROR, e)
             }
         }
 
