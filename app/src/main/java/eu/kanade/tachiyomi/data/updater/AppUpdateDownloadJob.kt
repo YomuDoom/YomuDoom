@@ -1,7 +1,9 @@
 package eu.kanade.tachiyomi.data.updater
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Build
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -12,6 +14,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import eu.kanade.tachiyomi.data.notification.Notifications
+import eu.kanade.tachiyomi.extension.util.ExtensionInstaller
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.ProgressListener
@@ -21,6 +24,10 @@ import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.storage.saveTo
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import logcat.LogPriority
+import logcat.logcat
 import okhttp3.internal.http2.ErrorCode
 import okhttp3.internal.http2.StreamResetException
 import tachiyomi.core.common.i18n.stringResource
@@ -36,21 +43,33 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
     private val notifier = AppUpdateNotifier(context)
     private val network: NetworkHelper by injectLazy()
 
+    sealed interface DownloadState {
+        data object Idle : DownloadState
+        data class Progress(val percent: Int) : DownloadState
+        data class Completed(val uri: Uri) : DownloadState
+        data class Error(val error: Throwable?) : DownloadState
+    }
+
     override suspend fun doWork(): Result {
         val url = inputData.getString(EXTRA_DOWNLOAD_URL)
         val title = inputData.getString(EXTRA_DOWNLOAD_TITLE) ?: context.stringResource(MR.strings.app_name)
 
         if (url.isNullOrEmpty()) {
+            _downloadState.value = DownloadState.Error(IllegalArgumentException("Missing download URL"))
             return Result.failure()
         }
 
         setForegroundSafely()
 
-        withIOContext {
-            downloadApk(title, url)
+        return try {
+            withIOContext {
+                downloadApk(title, url)
+            }
+            Result.success()
+        } catch (e: Exception) {
+            _downloadState.value = DownloadState.Error(e)
+            Result.failure()
         }
-
-        return Result.success()
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
@@ -82,11 +101,16 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
             var lastTick = 0L
 
             override fun update(bytesRead: Long, contentLength: Long, done: Boolean) {
-                val progress = (100 * (bytesRead.toFloat() / contentLength)).toInt()
+                val progress = if (contentLength > 0) {
+                    (100 * (bytesRead.toFloat() / contentLength)).toInt()
+                } else {
+                    -1
+                }
                 val currentTime = System.currentTimeMillis()
                 if (progress > savedProgress && currentTime - 200 > lastTick) {
                     savedProgress = progress
                     lastTick = currentTime
+                    _downloadState.value = DownloadState.Progress(progress)
                     notifier.onProgressChange(progress)
                 }
             }
@@ -106,15 +130,20 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
                 response.close()
                 throw Exception("Unsuccessful response")
             }
+            val uri = apkFile.getUriCompat(context)
             notifier.cancel()
-            notifier.promptInstall(apkFile.getUriCompat(context))
+            notifier.promptInstall(uri)
+            _downloadState.value = DownloadState.Completed(uri)
+            installApk(context, uri)
         } catch (e: Exception) {
             val shouldCancel = e is CancellationException ||
                 (e is StreamResetException && e.errorCode == ErrorCode.CANCEL)
             if (shouldCancel) {
                 notifier.cancel()
+                _downloadState.value = DownloadState.Idle
             } else {
                 notifier.onDownloadError(url)
+                _downloadState.value = DownloadState.Error(e)
             }
         }
     }
@@ -124,6 +153,25 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
 
         const val EXTRA_DOWNLOAD_URL = "DOWNLOAD_URL"
         const val EXTRA_DOWNLOAD_TITLE = "DOWNLOAD_TITLE"
+
+        private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
+        val downloadState = _downloadState.asStateFlow()
+
+        fun resetState() {
+            _downloadState.value = DownloadState.Idle
+        }
+
+        fun installApk(context: Context, uri: Uri) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, ExtensionInstaller.APK_MIME)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to launch package installer" }
+            }
+        }
 
         fun start(context: Context, url: String, title: String? = null) {
             val constraints = Constraints(
@@ -146,6 +194,7 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
 
         fun stop(context: Context) {
             context.workManager.cancelUniqueWork(TAG)
+            _downloadState.value = DownloadState.Idle
         }
     }
 }

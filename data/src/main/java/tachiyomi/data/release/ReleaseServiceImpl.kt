@@ -36,20 +36,27 @@ class ReleaseServiceImpl(
     }
 
     private fun getDownloadLink(release: GithubRelease, isFoss: Boolean): String? {
-        val map = release.assets.associate { asset ->
+        val apkAssets = release.assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        if (apkAssets.isEmpty()) return null
+
+        val map = apkAssets.associate { asset ->
             BUILD_TYPES.find { "-$it" in asset.name } to asset.downloadLink
         }
 
         return if (!isFoss) {
-            map[Build.SUPPORTED_ABIS[0]] ?: map[null]
+            map[Build.SUPPORTED_ABIS[0]]
+                ?: map["universal"]
+                ?: map[null]
+                ?: apkAssets.firstOrNull { "universal" in it.name }?.downloadLink
+                ?: apkAssets.first().downloadLink
         } else {
-            map[FOSS]
+            map[FOSS] ?: apkAssets.firstOrNull { "foss" in it.name }?.downloadLink
         }
     }
 
     companion object {
         private const val FOSS = "foss"
-        private val BUILD_TYPES = listOf(FOSS, "arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+        private val BUILD_TYPES = listOf(FOSS, "arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal")
 
         /**
          * Regular expression that matches a mention to a valid GitHub username, like it's
