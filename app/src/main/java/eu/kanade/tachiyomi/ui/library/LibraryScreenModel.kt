@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.library
 
+import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
@@ -15,14 +16,25 @@ import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.service.NsfwContentFilter
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.presentation.manga.DownloadAction
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
+import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.util.OnlineCoverFetcher
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
+import eu.kanade.tachiyomi.util.editCover
+import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.removeCovers
+import eu.kanade.tachiyomi.util.system.cancelNotification
+import eu.kanade.tachiyomi.util.system.notificationBuilder
+import eu.kanade.tachiyomi.util.system.notify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -36,12 +48,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.launch
+import logcat.LogPriority
 import mihon.core.common.utils.mutate
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -63,6 +79,7 @@ import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracksPerManga
 import tachiyomi.domain.track.model.Track
+import tachiyomi.i18n.MR
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -726,6 +743,106 @@ class LibraryScreenModel(
 
     fun openDeleteMangaDialog() {
         mutableState.update { it.copy(dialog = Dialog.DeleteManga(state.value.selectedManga)) }
+    }
+
+    companion object {
+        private val recoveryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+        @Volatile
+        private var isRecoveringCovers = false
+    }
+
+    fun fixMissingCovers(
+        context: Context,
+        onShowSnackbar: (String) -> Unit,
+    ) {
+        if (isRecoveringCovers) {
+            onShowSnackbar(context.stringResource(MR.strings.cover_recovery_in_progress))
+            return
+        }
+
+        recoveryScope.launch {
+            isRecoveringCovers = true
+            try {
+                val allManga = getLibraryManga.await().map { it.manga }
+                val missingCovers = allManga.filter { manga ->
+                    val customCoverExists = coverCache.getCustomCoverFile(manga.id).exists()
+                    val standardCoverValid = !manga.thumbnailUrl.isNullOrBlank() &&
+                        coverCache.getCoverFile(manga.thumbnailUrl)?.let { it.exists() && it.length() > 0 } == true
+                    !customCoverExists && !standardCoverValid
+                }
+
+                if (missingCovers.isEmpty()) {
+                    onShowSnackbar(context.stringResource(MR.strings.cover_check_none_missing))
+                    return@launch
+                }
+
+                onShowSnackbar(context.stringResource(MR.strings.cover_check_fetching_mass))
+
+                val total = missingCovers.size
+                val notifBuilder = context.notificationBuilder(Notifications.CHANNEL_LIBRARY_PROGRESS) {
+                    setContentTitle(context.stringResource(MR.strings.cover_recovery_notification_title))
+                    setContentText(context.stringResource(MR.strings.cover_recovery_notification_progress, 0, total))
+                    setSmallIcon(R.drawable.ic_refresh_24dp)
+                    setProgress(total, 0, false)
+                    setOngoing(true)
+                    setOnlyAlertOnce(true)
+                }
+                context.notify(Notifications.ID_COVER_RECOVERY_PROGRESS, notifBuilder.build())
+
+                var successCount = 0
+                for ((index, manga) in missingCovers.withIndex()) {
+                    try {
+                        notifBuilder.apply {
+                            setContentTitle(context.stringResource(MR.strings.cover_recovery_notification_title))
+                            val progressText = context.stringResource(
+                                MR.strings.cover_recovery_notification_progress,
+                                index + 1,
+                                total,
+                            )
+                            setContentText("$progressText • ${manga.title.chop(30)}")
+                            setProgress(total, index + 1, false)
+                        }
+                        context.notify(Notifications.ID_COVER_RECOVERY_PROGRESS, notifBuilder.build())
+
+                        val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                        if (stream != null) {
+                            stream.use {
+                                manga.editCover(Injekt.get(), it, updateManga, coverCache)
+                            }
+                            successCount++
+                        }
+                    } catch (e: Exception) {
+                        logcat(LogPriority.WARN, e)
+                    }
+                }
+
+                val resultMessage = context.stringResource(
+                    MR.strings.cover_check_mass_result,
+                    successCount,
+                    total,
+                )
+                context.cancelNotification(Notifications.ID_COVER_RECOVERY_PROGRESS)
+                context.notify(
+                    Notifications.ID_COVER_RECOVERY_PROGRESS,
+                    context.notificationBuilder(Notifications.CHANNEL_LIBRARY_PROGRESS) {
+                        setContentTitle(context.stringResource(MR.strings.action_recover_missing_covers))
+                        setContentText(resultMessage)
+                        setSmallIcon(R.drawable.ic_refresh_24dp)
+                        setProgress(0, 0, false)
+                        setAutoCancel(true)
+                        setOngoing(false)
+                    }.build(),
+                )
+                onShowSnackbar(resultMessage)
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                context.cancelNotification(Notifications.ID_COVER_RECOVERY_PROGRESS)
+                onShowSnackbar(e.message ?: "Error")
+            } finally {
+                isRecoveringCovers = false
+            }
+        }
     }
 
     fun closeDialog() {

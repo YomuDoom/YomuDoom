@@ -36,6 +36,7 @@ fun MangaToolbar(
     onClickEditCategory: (() -> Unit)?,
     onClickRefresh: () -> Unit,
     onClickSimilar: () -> Unit,
+    onClickAvailableCovers: (() -> Unit)? = null,
     onClickMigrate: (() -> Unit)?,
     onClickEditNotes: () -> Unit,
 
@@ -123,6 +124,14 @@ fun MangaToolbar(
                             onClick = onClickSimilar,
                         ),
                     )
+                    if (onClickAvailableCovers != null) {
+                        add(
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_available_covers),
+                                onClick = onClickAvailableCovers,
+                            ),
+                        )
+                    }
                     if (onClickEditCategory != null) {
                         add(
                             AppBar.OverflowAction(

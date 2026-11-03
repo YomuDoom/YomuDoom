@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
+import eu.kanade.tachiyomi.util.OnlineCoverFetcher
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toShareIntent
@@ -140,6 +141,79 @@ class MangaCoverScreenModel(
                 notifyCoverUpdated(context)
             } catch (e: Exception) {
                 notifyFailedCoverUpdate(context, e)
+            }
+        }
+    }
+
+    fun fetchOnlineCover(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
+        val manga = state.value ?: run {
+            onComplete?.invoke(false)
+            return
+        }
+        screenModelScope.launchIO {
+            try {
+                val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                if (stream != null) {
+                    stream.use {
+                        manga.editCover(Injekt.get(), it, updateManga, coverCache)
+                    }
+                    withUIContext {
+                        notifyCoverUpdated(context)
+                        onComplete?.invoke(true)
+                    }
+                } else {
+                    withUIContext {
+                        snackbarHostState.showSnackbar(
+                            context.stringResource(MR.strings.cover_online_fetch_none_found),
+                            withDismissAction = true,
+                        )
+                        onComplete?.invoke(false)
+                    }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                withUIContext {
+                    snackbarHostState.showSnackbar(
+                        "Falha ao obter capa online: ${e.message}",
+                        withDismissAction = true,
+                    )
+                    onComplete?.invoke(false)
+                }
+            }
+        }
+    }
+
+    fun setCustomCoverFromUrl(context: Context, url: String, onComplete: ((Boolean) -> Unit)? = null) {
+        val manga = state.value ?: run {
+            onComplete?.invoke(false)
+            return
+        }
+        screenModelScope.launchIO {
+            try {
+                val stream = OnlineCoverFetcher.fetchStreamFromUrl(url)
+                if (stream != null) {
+                    stream.use {
+                        manga.editCover(Injekt.get(), it, updateManga, coverCache)
+                    }
+                    withUIContext {
+                        notifyCoverUpdated(context)
+                        onComplete?.invoke(true)
+                    }
+                } else {
+                    withUIContext {
+                        snackbarHostState.showSnackbar(
+                            context.stringResource(MR.strings.notification_cover_update_failed),
+                            withDismissAction = true,
+                        )
+                        onComplete?.invoke(false)
+                    }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                withUIContext {
+                    notifyFailedCoverUpdate(context, e)
+                    onComplete?.invoke(false)
+                }
             }
         }
     }

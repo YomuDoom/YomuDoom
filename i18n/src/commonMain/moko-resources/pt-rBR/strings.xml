@@ -985,4 +985,22 @@
     <string name="donationCampaign.paragraph2">A tela de suporte oferece apoio mensal, doação única e Pix. Nenhuma doação libera recursos exclusivos ou recompensas.</string>
     <string name="donationCampaign.paragraph3">O YomuDoom continuará gratuito e de código aberto independentemente de doações.</string>
     <string name="donationCampaign.dismiss">Ignorar</string>
+
+    <!-- Missing covers recovery -->
+    <string name="action_recover_missing_covers">Recuperar capas ausentes</string>
+    <string name="label_missing_cover">Sem capa</string>
+    <string name="action_fetch_online_cover">Buscar capa online</string>
+    <string name="action_migrate_source">Trocar fonte (Migrar)</string>
+    <string name="cover_online_fetch_none_found">Não foi possível encontrar capa online para este título.</string>
+    <string name="cover_check_none_missing">Todas as obras já possuem capas salvas.</string>
+    <string name="cover_check_fetching_mass">Recuperando capas ausentes em segundo plano…</string>
+    <string name="cover_check_mass_result">%1$d de %2$d capas recuperadas</string>
+    <string name="cover_recovery_notification_title">Recuperando capas ausentes</string>
+    <string name="cover_recovery_notification_progress">%1$d de %2$d</string>
+    <string name="cover_recovery_in_progress">A recuperação de capas já está em andamento.</string>
+    <string name="action_available_covers">Capas disponíveis</string>
+    <string name="available_covers_dialog_title">Capas disponíveis</string>
+    <string name="available_covers_dialog_subtitle">Selecione uma imagem para definir como capa</string>
+    <string name="available_covers_fetching">Buscando capas disponíveis…</string>
+    <string name="available_covers_empty">Nenhuma capa encontrada para esta obra.</string>
 </resources>

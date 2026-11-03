@@ -62,6 +62,7 @@ fun MangaCoverDialog(
     onShareClick: () -> Unit,
     onSaveClick: () -> Unit,
     onEditClick: ((EditCoverAction) -> Unit)?,
+    onAvailableCoversClick: (() -> Unit)? = null,
     onDismissRequest: () -> Unit,
 ) {
     Dialog(
@@ -110,7 +111,7 @@ fun MangaCoverDialog(
                                 var expanded by remember { mutableStateOf(false) }
                                 IconButton(
                                     onClick = {
-                                        if (isCustomCover) {
+                                        if (isCustomCover || onAvailableCoversClick != null) {
                                             expanded = true
                                         } else {
                                             onEditClick(EditCoverAction.EDIT)
@@ -134,13 +135,24 @@ fun MangaCoverDialog(
                                             expanded = false
                                         },
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text(text = stringResource(MR.strings.action_delete)) },
-                                        onClick = {
-                                            onEditClick(EditCoverAction.DELETE)
-                                            expanded = false
-                                        },
-                                    )
+                                    if (onAvailableCoversClick != null) {
+                                        DropdownMenuItem(
+                                            text = { Text(text = stringResource(MR.strings.action_available_covers)) },
+                                            onClick = {
+                                                expanded = false
+                                                onAvailableCoversClick()
+                                            },
+                                        )
+                                    }
+                                    if (isCustomCover) {
+                                        DropdownMenuItem(
+                                            text = { Text(text = stringResource(MR.strings.action_delete)) },
+                                            onClick = {
+                                                onEditClick(EditCoverAction.DELETE)
+                                                expanded = false
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }

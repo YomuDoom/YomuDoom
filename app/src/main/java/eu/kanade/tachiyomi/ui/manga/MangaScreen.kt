@@ -35,6 +35,7 @@ import eu.kanade.presentation.manga.ChapterSettingsDialog
 import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.presentation.manga.MangaScreen
+import eu.kanade.presentation.manga.components.AvailableCoversDialog
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
 import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
@@ -128,6 +129,13 @@ class MangaScreen(
             }
         }
 
+        val coverScreenModel = rememberScreenModel { MangaCoverScreenModel(successState.manga.id) }
+        val coverPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                coverScreenModel.editCover(context, uri)
+            }
+        }
+
         MangaScreen(
             state = successState,
             snackbarHostState = screenModel.snackbarHostState,
@@ -169,6 +177,11 @@ class MangaScreen(
             onContinueReading = { continueReading(context, screenModel.getNextUnreadChapter()) },
             onSearch = { query, global -> scope.launch { performSearch(navigator, query, global) } },
             onCoverClicked = screenModel::showCoverDialog,
+            onEditCoverClicked = { coverPickerLauncher.launch("image/*") },
+            onFetchOnlineCoverClicked = { onComplete ->
+                coverScreenModel.fetchOnlineCover(context, onComplete)
+            },
+            onAvailableCoversClicked = screenModel::showAvailableCoversDialog,
             onShareClicked = { shareManga(context, screenModel.manga, screenModel.source) }.takeIf { isHttpSource },
             onDownloadActionClicked = screenModel::runDownloadAction.takeIf { !successState.source.isLocalOrStub() },
             onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.manga.favorite },
@@ -282,30 +295,39 @@ class MangaScreen(
                 )
             }
             MangaScreenModel.Dialog.FullCover -> {
-                val sm = rememberScreenModel { MangaCoverScreenModel(successState.manga.id) }
-                val manga by sm.state.collectAsState()
+                val manga by coverScreenModel.state.collectAsState()
                 if (manga != null) {
-                    val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
-                        if (it == null) return@rememberLauncherForActivityResult
-                        sm.editCover(context, it)
-                    }
                     MangaCoverDialog(
                         manga = manga!!,
-                        snackbarHostState = sm.snackbarHostState,
+                        snackbarHostState = coverScreenModel.snackbarHostState,
                         isCustomCover = remember(manga) { manga!!.hasCustomCover() },
-                        onShareClick = { sm.shareCover(context) },
-                        onSaveClick = { sm.saveCover(context) },
+                        onShareClick = { coverScreenModel.shareCover(context) },
+                        onSaveClick = { coverScreenModel.saveCover(context) },
                         onEditClick = {
                             when (it) {
-                                EditCoverAction.EDIT -> getContent.launch("image/*")
-                                EditCoverAction.DELETE -> sm.deleteCustomCover(context)
+                                EditCoverAction.EDIT -> coverPickerLauncher.launch("image/*")
+                                EditCoverAction.DELETE -> coverScreenModel.deleteCustomCover(context)
                             }
                         },
+                        onAvailableCoversClick = screenModel::showAvailableCoversDialog,
                         onDismissRequest = onDismissRequest,
                     )
                 } else {
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
+            }
+            MangaScreenModel.Dialog.AvailableCovers -> {
+                AvailableCoversDialog(
+                    manga = successState.manga,
+                    onDismissRequest = onDismissRequest,
+                    onSelectCover = { cover ->
+                        coverScreenModel.setCustomCoverFromUrl(context, cover.url) { success ->
+                            if (success) {
+                                onDismissRequest()
+                            }
+                        }
+                    },
+                )
             }
             is MangaScreenModel.Dialog.SetFetchInterval -> {
                 SetIntervalDialog(

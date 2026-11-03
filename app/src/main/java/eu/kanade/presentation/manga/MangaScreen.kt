@@ -105,6 +105,9 @@ fun MangaScreen(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClicked: (() -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -157,6 +160,9 @@ fun MangaScreen(
             onContinueReading = onContinueReading,
             onSearch = onSearch,
             onCoverClicked = onCoverClicked,
+            onEditCoverClicked = onEditCoverClicked,
+            onFetchOnlineCoverClicked = onFetchOnlineCoverClicked,
+            onAvailableCoversClicked = onAvailableCoversClicked,
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
@@ -194,6 +200,9 @@ fun MangaScreen(
             onContinueReading = onContinueReading,
             onSearch = onSearch,
             onCoverClicked = onCoverClicked,
+            onEditCoverClicked = onEditCoverClicked,
+            onFetchOnlineCoverClicked = onFetchOnlineCoverClicked,
+            onAvailableCoversClicked = onAvailableCoversClicked,
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
@@ -239,6 +248,9 @@ private fun MangaScreenSmallImpl(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClicked: (() -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -314,6 +326,7 @@ private fun MangaScreenSmallImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickSimilar = onSimilarClicked,
+                onClickAvailableCovers = onAvailableCoversClicked,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
                 actionModeCounter = selectedChapterCount,
@@ -396,6 +409,10 @@ private fun MangaScreenSmallImpl(
                             sourceName = remember { state.source.getNameForMangaInfo() },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
+                            onEditCoverClick = onEditCoverClicked,
+                            onFetchOnlineCoverClick = onFetchOnlineCoverClicked,
+                            onAvailableCoversClick = onAvailableCoversClicked,
+                            onMigrateClick = onMigrateClicked,
                             doSearch = onSearch,
                         )
                     }
@@ -491,6 +508,9 @@ fun MangaScreenLargeImpl(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
+    onAvailableCoversClicked: (() -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -559,6 +579,7 @@ fun MangaScreenLargeImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickSimilar = onSimilarClicked,
+                onClickAvailableCovers = onAvailableCoversClicked,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
                 onCancelActionMode = { onAllChapterSelected(false) },
@@ -642,6 +663,10 @@ fun MangaScreenLargeImpl(
                             sourceName = remember { state.source.getNameForMangaInfo() },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
+                            onEditCoverClick = onEditCoverClicked,
+                            onFetchOnlineCoverClick = onFetchOnlineCoverClicked,
+                            onAvailableCoversClick = onAvailableCoversClicked,
+                            onMigrateClick = onMigrateClicked,
                             doSearch = onSearch,
                         )
                         MangaActionRow(
