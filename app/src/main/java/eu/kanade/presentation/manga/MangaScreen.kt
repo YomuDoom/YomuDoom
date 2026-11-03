@@ -105,6 +105,8 @@ fun MangaScreen(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -157,6 +159,8 @@ fun MangaScreen(
             onContinueReading = onContinueReading,
             onSearch = onSearch,
             onCoverClicked = onCoverClicked,
+            onEditCoverClicked = onEditCoverClicked,
+            onFetchOnlineCoverClicked = onFetchOnlineCoverClicked,
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
@@ -194,6 +198,8 @@ fun MangaScreen(
             onContinueReading = onContinueReading,
             onSearch = onSearch,
             onCoverClicked = onCoverClicked,
+            onEditCoverClicked = onEditCoverClicked,
+            onFetchOnlineCoverClicked = onFetchOnlineCoverClicked,
             onShareClicked = onShareClicked,
             onDownloadActionClicked = onDownloadActionClicked,
             onEditCategoryClicked = onEditCategoryClicked,
@@ -239,6 +245,8 @@ private fun MangaScreenSmallImpl(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -396,6 +404,9 @@ private fun MangaScreenSmallImpl(
                             sourceName = remember { state.source.getNameForMangaInfo() },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
+                            onEditCoverClick = onEditCoverClicked,
+                            onFetchOnlineCoverClick = onFetchOnlineCoverClicked,
+                            onMigrateClick = onMigrateClicked,
                             doSearch = onSearch,
                         )
                     }
@@ -491,6 +502,8 @@ fun MangaScreenLargeImpl(
 
     // For cover dialog
     onCoverClicked: () -> Unit,
+    onEditCoverClicked: (() -> Unit)? = null,
+    onFetchOnlineCoverClicked: (((Boolean) -> Unit) -> Unit)? = null,
 
     // For top action menu
     onShareClicked: (() -> Unit)?,
@@ -642,6 +655,9 @@ fun MangaScreenLargeImpl(
                             sourceName = remember { state.source.getNameForMangaInfo() },
                             isStubSource = remember { state.source is StubSource },
                             onCoverClick = onCoverClicked,
+                            onEditCoverClick = onEditCoverClicked,
+                            onFetchOnlineCoverClick = onFetchOnlineCoverClicked,
+                            onMigrateClick = onMigrateClicked,
                             doSearch = onSearch,
                         )
                         MangaActionRow(

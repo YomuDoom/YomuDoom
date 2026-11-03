@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.library
 
+import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
@@ -21,8 +22,12 @@ import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.util.OnlineCoverFetcher
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
+import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.removeCovers
+import logcat.LogPriority
+import tachiyomi.core.common.util.system.logcat
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -39,6 +44,8 @@ import kotlinx.coroutines.flow.updateAndGet
 import mihon.core.common.utils.mutate
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
+import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.i18n.MR
 import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -726,6 +733,48 @@ class LibraryScreenModel(
 
     fun openDeleteMangaDialog() {
         mutableState.update { it.copy(dialog = Dialog.DeleteManga(state.value.selectedManga)) }
+    }
+
+    fun fixMissingCovers(
+        context: Context,
+        onShowSnackbar: (String) -> Unit,
+    ) {
+        screenModelScope.launchIO {
+            try {
+                val allManga = getLibraryManga.await().map { it.manga }
+                val missingCovers = allManga.filter { manga ->
+                    !coverCache.getCustomCoverFile(manga.id).exists() &&
+                        (manga.thumbnailUrl.isNullOrBlank() || coverCache.getCoverFile(manga.thumbnailUrl)?.let { it.exists() && it.length() > 0 } != true)
+                }
+
+                if (missingCovers.isEmpty()) {
+                    onShowSnackbar(context.stringResource(MR.strings.cover_check_none_missing))
+                    return@launchIO
+                }
+
+                onShowSnackbar(context.stringResource(MR.strings.cover_check_fetching_mass))
+
+                var successCount = 0
+                for (manga in missingCovers) {
+                    try {
+                        val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                        if (stream != null) {
+                            stream.use {
+                                manga.editCover(Injekt.get(), it, updateManga, coverCache)
+                            }
+                            successCount++
+                        }
+                    } catch (e: Exception) {
+                        logcat(LogPriority.WARN, e)
+                    }
+                }
+
+                onShowSnackbar(context.stringResource(MR.strings.cover_check_mass_result, successCount, missingCovers.size))
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                onShowSnackbar(e.message ?: "Error")
+            }
+        }
     }
 
     fun closeDialog() {

@@ -152,6 +152,19 @@ data object LibraryTab : Tab {
                             }
                         }
                     },
+                    onClickFixMissingCovers = {
+                        screenModel.fixMissingCovers(
+                            context = context,
+                            onShowSnackbar = { message ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = message,
+                                        withDismissAction = true,
+                                    )
+                                }
+                            },
+                        )
+                    },
                     onClickPreviewUpdate = if (isDebugBuildType) {
                         {
                             navigator.push(

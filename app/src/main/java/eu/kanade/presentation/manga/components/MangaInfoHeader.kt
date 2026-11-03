@@ -41,12 +41,20 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material.icons.outlined.SwapCalls
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
@@ -118,6 +126,9 @@ fun MangaInfoBox(
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
+    onEditCoverClick: (() -> Unit)? = null,
+    onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onMigrateClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -154,6 +165,9 @@ fun MangaInfoBox(
                     sourceName = sourceName,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
+                    onEditCoverClick = onEditCoverClick,
+                    onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                    onMigrateClick = onMigrateClick,
                     doSearch = doSearch,
                 )
             } else {
@@ -163,6 +177,9 @@ fun MangaInfoBox(
                     sourceName = sourceName,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
+                    onEditCoverClick = onEditCoverClick,
+                    onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                    onMigrateClick = onMigrateClick,
                     doSearch = doSearch,
                 )
             }
@@ -341,14 +358,100 @@ fun ExpandableMangaDescription(
 }
 
 @Composable
+private fun CoverFixPanel(
+    modifier: Modifier = Modifier,
+    isFetchingCover: Boolean,
+    onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)?,
+    onMigrateClick: (() -> Unit)?,
+    onSuccess: () -> Unit,
+    onLoadingChange: (Boolean) -> Unit,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        if (onFetchOnlineCoverClick != null) {
+            FilledTonalButton(
+                onClick = {
+                    if (!isFetchingCover) {
+                        onLoadingChange(true)
+                        onFetchOnlineCoverClick { success ->
+                            onLoadingChange(false)
+                            if (success) onSuccess()
+                        }
+                    }
+                },
+                enabled = !isFetchingCover,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                if (isFetchingCover) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(MR.strings.action_fetch_online_cover),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Photo,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(MR.strings.action_fetch_online_cover),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+
+        if (onMigrateClick != null) {
+            OutlinedButton(
+                onClick = onMigrateClick,
+                enabled = !isFetchingCover,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SwapCalls,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(MR.strings.action_migrate_source),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun MangaAndSourceTitlesLarge(
     appBarPadding: Dp,
     manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
+    onEditCoverClick: (() -> Unit)? = null,
+    onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onMigrateClick: (() -> Unit)? = null,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
+    var isCoverError by remember(manga) { mutableStateOf(manga.thumbnailUrl.isNullOrBlank()) }
+    var isFetchingCover by remember(manga) { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,7 +466,19 @@ private fun MangaAndSourceTitlesLarge(
                 .build(),
             contentDescription = stringResource(MR.strings.manga_cover),
             onClick = onCoverClick,
+            onError = { isCoverError = true },
         )
+        if (isCoverError && (onFetchOnlineCoverClick != null || onMigrateClick != null)) {
+            Spacer(modifier = Modifier.height(12.dp))
+            CoverFixPanel(
+                modifier = Modifier.fillMaxWidth(0.65f),
+                isFetchingCover = isFetchingCover,
+                onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                onMigrateClick = onMigrateClick,
+                onSuccess = { isCoverError = false },
+                onLoadingChange = { isFetchingCover = it },
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         MangaContentInfo(
             title = manga.title,
@@ -385,37 +500,59 @@ private fun MangaAndSourceTitlesSmall(
     sourceName: String,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
+    onEditCoverClick: (() -> Unit)? = null,
+    onFetchOnlineCoverClick: (((Boolean) -> Unit) -> Unit)? = null,
+    onMigrateClick: (() -> Unit)? = null,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
+    var isCoverError by remember(manga) { mutableStateOf(manga.thumbnailUrl.isNullOrBlank()) }
+    var isFetchingCover by remember(manga) { mutableStateOf(false) }
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        MangaCover.Book(
-            modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(manga)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            MangaContentInfo(
-                title = manga.title,
-                author = manga.author,
-                artist = manga.artist,
-                status = manga.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
+            MangaCover.Book(
+                modifier = Modifier
+                    .sizeIn(maxWidth = 100.dp)
+                    .align(Alignment.Top),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+                onError = { isCoverError = true },
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                MangaContentInfo(
+                    title = manga.title,
+                    author = manga.author,
+                    artist = manga.artist,
+                    status = manga.status,
+                    sourceName = sourceName,
+                    isStubSource = isStubSource,
+                    doSearch = doSearch,
+                )
+            }
+        }
+
+        if (isCoverError && (onFetchOnlineCoverClick != null || onMigrateClick != null)) {
+            Spacer(modifier = Modifier.height(12.dp))
+            CoverFixPanel(
+                modifier = Modifier.fillMaxWidth(),
+                isFetchingCover = isFetchingCover,
+                onFetchOnlineCoverClick = onFetchOnlineCoverClick,
+                onMigrateClick = onMigrateClick,
+                onSuccess = { isCoverError = false },
+                onLoadingChange = { isFetchingCover = it },
             )
         }
     }
