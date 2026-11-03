@@ -1,5 +1,19 @@
 # YomuDoom Changelog
 
+## 0.21.5
+
+### Português (Brasil)
+
+- Corrige busca de capas alternativas no MangaDex e Kitsu executando em segundo plano (`Dispatchers.IO`), evitando erro de rede na interface.
+- Adiciona campo de pesquisa no diálogo de capas disponíveis para buscar por nomes alternativos ou em outros idiomas.
+- Melhora o carregamento das imagens de capa com fallback nativo, tratamento de erros e placeholder.
+
+### English
+
+- Fixes alternative cover searching on MangaDex and Kitsu by running in the background (`Dispatchers.IO`), avoiding network on main thread errors.
+- Adds a search field in the available covers dialog to query with alternative or localized titles.
+- Improves cover image loading with native source fallback, error handling, and placeholders.
+
 ## 0.21.4
 
 ### Português (Brasil)

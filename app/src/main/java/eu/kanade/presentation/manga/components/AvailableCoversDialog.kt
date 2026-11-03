@@ -20,13 +20,18 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ImageNotSupported
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,14 +46,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import eu.kanade.presentation.util.rememberResourceBitmapPainter
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.util.AvailableCover
 import eu.kanade.tachiyomi.util.OnlineCoverFetcher
 import kotlinx.coroutines.launch
@@ -62,15 +74,22 @@ fun AvailableCoversDialog(
     onDismissRequest: () -> Unit,
     onSelectCover: (AvailableCover) -> Unit,
 ) {
+    var searchQuery by remember { mutableStateOf(manga.title) }
+    var currentSearch by remember { mutableStateOf(manga.title) }
     var covers by remember { mutableStateOf<List<AvailableCover>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var applyingCoverUrl by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    LaunchedEffect(manga.id, manga.title) {
+    LaunchedEffect(currentSearch) {
         isLoading = true
         try {
-            covers = OnlineCoverFetcher.getAvailableCovers(manga.title, manga.thumbnailUrl)
+            covers = OnlineCoverFetcher.getAvailableCovers(
+                title = currentSearch,
+                existingUrl = manga.thumbnailUrl,
+                mangaData = manga,
+            )
         } catch (_: Exception) {
             covers = emptyList()
         } finally {
@@ -86,8 +105,8 @@ fun AvailableCoversDialog(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .fillMaxHeight(0.85f),
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.88f),
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
@@ -122,6 +141,49 @@ fun AvailableCoversDialog(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Search field for custom title lookup
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = {
+                        Text(
+                            text = stringResource(MR.strings.action_search_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank() && searchQuery != currentSearch) {
+                            IconButton(onClick = { currentSearch = searchQuery.trim() }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            if (searchQuery.isNotBlank()) {
+                                currentSearch = searchQuery.trim()
+                            }
+                        },
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -174,7 +236,7 @@ fun AvailableCoversDialog(
                     }
                     else -> {
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 135.dp),
+                            columns = GridCells.Fixed(2),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
@@ -204,7 +266,12 @@ fun AvailableCoversDialog(
                                 ) {
                                     Box(modifier = Modifier.fillMaxSize()) {
                                         AsyncImage(
-                                            model = cover.url,
+                                            model = ImageRequest.Builder(context)
+                                                .data(cover.data)
+                                                .crossfade(true)
+                                                .build(),
+                                            placeholder = ColorPainter(Color(0x1F888888)),
+                                            error = rememberResourceBitmapPainter(id = R.drawable.cover_error),
                                             contentDescription = cover.description,
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier.fillMaxSize(),

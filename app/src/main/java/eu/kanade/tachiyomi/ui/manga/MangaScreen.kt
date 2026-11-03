@@ -321,9 +321,14 @@ class MangaScreen(
                     manga = successState.manga,
                     onDismissRequest = onDismissRequest,
                     onSelectCover = { cover ->
-                        coverScreenModel.setCustomCoverFromUrl(context, cover.url) { success ->
-                            if (success) {
-                                onDismissRequest()
+                        if (cover.source == "Fonte") {
+                            coverScreenModel.deleteCustomCover(context)
+                            onDismissRequest()
+                        } else {
+                            coverScreenModel.setCustomCoverFromUrl(context, cover.url) { success ->
+                                if (success) {
+                                    onDismissRequest()
+                                }
                             }
                         }
                     },

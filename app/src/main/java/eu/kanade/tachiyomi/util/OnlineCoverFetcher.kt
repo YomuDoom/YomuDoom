@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.util
 
 import eu.kanade.tachiyomi.network.NetworkHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -21,19 +23,23 @@ data class AvailableCover(
     val url: String,
     val description: String,
     val source: String,
+    val data: Any = url,
 )
 
 object OnlineCoverFetcher {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun fetchStreamFromUrl(url: String): InputStream? {
+    suspend fun fetchStreamFromUrl(url: String): InputStream? = withContext(Dispatchers.IO) {
         val networkHelper: NetworkHelper = Injekt.get()
         val client = networkHelper.client
-        return try {
+        try {
             val req = Request.Builder()
                 .url(url)
-                .header("User-Agent", "YomuDoom/1.0")
+                .header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                )
                 .build()
             val resp = client.newCall(req).execute()
             if (resp.isSuccessful) {
@@ -59,15 +65,22 @@ object OnlineCoverFetcher {
 
     private fun generateTitleQueries(title: String): List<String> {
         val queries = mutableListOf<String>()
-        val cleanTitle = title.replace(Regex("\\[.*?\\]|\\(.*?\\)"), "").trim()
+        val cleanTitle = title.replace(Regex("\\[.*?\\]|\\(.*?\\)"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
         if (cleanTitle.isNotBlank()) queries.add(cleanTitle)
-        if (title != cleanTitle && title.isNotBlank()) queries.add(title)
+        if (title != cleanTitle && title.isNotBlank()) queries.add(title.trim())
         if (cleanTitle.contains(" - ")) queries.add(cleanTitle.substringBefore(" - ").trim())
         if (cleanTitle.contains(":")) queries.add(cleanTitle.substringBefore(":").trim())
+        if (cleanTitle.contains("/")) queries.add(cleanTitle.substringBefore("/").trim())
         return queries.distinct()
     }
 
-    suspend fun getAvailableCovers(title: String, existingUrl: String? = null): List<AvailableCover> {
+    suspend fun getAvailableCovers(
+        title: String,
+        existingUrl: String? = null,
+        mangaData: Any? = null,
+    ): List<AvailableCover> = withContext(Dispatchers.IO) {
         val results = mutableListOf<AvailableCover>()
 
         // 1. Capa original registrada, se houver
@@ -77,22 +90,23 @@ object OnlineCoverFetcher {
                     url = existingUrl,
                     description = "Capa original",
                     source = "Fonte",
+                    data = mangaData ?: existingUrl,
                 ),
             )
         }
 
         val queries = generateTitleQueries(title)
-        if (queries.isEmpty()) return results
+        if (queries.isEmpty()) return@withContext results
 
         coroutineScope {
-            val mangaDexDeferred = async { fetchMangaDexCovers(queries) }
-            val kitsuDeferred = async { fetchKitsuCovers(queries) }
+            val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+            val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
 
             results.addAll(mangaDexDeferred.await())
             results.addAll(kitsuDeferred.await())
         }
 
-        return results.distinctBy { it.url }
+        results.distinctBy { it.url }
     }
 
     private fun fetchMangaDexCovers(queries: List<String>): List<AvailableCover> {
@@ -104,28 +118,29 @@ object OnlineCoverFetcher {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
-                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=3"
+                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=5" +
+                    "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic"
                 val searchReq = Request.Builder()
                     .url(searchUrl)
-                    .header("User-Agent", "YomuDoom/1.0")
+                    .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
                     .build()
                 val searchResp = client.newCall(searchReq).execute()
                 if (searchResp.isSuccessful) {
-                    val bodyStr = searchResp.body?.string().orEmpty()
+                    val bodyStr = searchResp.body.string()
                     val root = json.parseToJsonElement(bodyStr).jsonObject
                     val mangaList = root["data"]?.jsonArray.orEmpty()
 
                     for (mangaElem in mangaList) {
                         val mangaObj = mangaElem.jsonObject
                         val mangaId = mangaObj["id"]?.jsonPrimitive?.contentOrNull ?: continue
-                        val covUrl = "https://api.mangadex.org/cover?manga[]=$mangaId&limit=100"
+                        val covUrl = "https://api.mangadex.org/cover?manga[]=$mangaId&limit=100&order[volume]=asc"
                         val covReq = Request.Builder()
                             .url(covUrl)
-                            .header("User-Agent", "YomuDoom/1.0")
+                            .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
                             .build()
                         val covResp = client.newCall(covReq).execute()
                         if (covResp.isSuccessful) {
-                            val covBodyStr = covResp.body?.string().orEmpty()
+                            val covBodyStr = covResp.body.string()
                             val covRoot = json.parseToJsonElement(covBodyStr).jsonObject
                             val covList = covRoot["data"]?.jsonArray.orEmpty()
 
@@ -168,6 +183,7 @@ object OnlineCoverFetcher {
                                         url = item.url,
                                         description = finalDesc,
                                         source = "MangaDex",
+                                        data = item.url,
                                     ),
                                 )
                             }
@@ -194,14 +210,15 @@ object OnlineCoverFetcher {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
-                val url = "https://kitsu.io/api/edge/manga?filter[text]=$encoded&page[limit]=5"
+                val url = "https://kitsu.io/api/edge/manga?filter%5Btext%5D=$encoded&page%5Blimit%5D=10"
                 val req = Request.Builder()
                     .url(url)
-                    .header("User-Agent", "YomuDoom/1.0")
+                    .header("User-Agent", "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)")
+                    .header("Accept", "application/vnd.api+json")
                     .build()
                 val resp = client.newCall(req).execute()
                 if (resp.isSuccessful) {
-                    val bodyStr = resp.body?.string().orEmpty()
+                    val bodyStr = resp.body.string()
                     val root = json.parseToJsonElement(bodyStr).jsonObject
                     val dataList = root["data"]?.jsonArray.orEmpty()
 
@@ -226,6 +243,7 @@ object OnlineCoverFetcher {
                                     url = imgUrl,
                                     description = desc,
                                     source = "Kitsu",
+                                    data = imgUrl,
                                 ),
                             )
                         }
@@ -242,14 +260,16 @@ object OnlineCoverFetcher {
         return covers
     }
 
-    suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? {
+    suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
+        Dispatchers.IO,
+    ) {
         val available = getAvailableCovers(title, existingUrl)
         for (cover in available) {
             val stream = fetchStreamFromUrl(cover.url)
             if (stream != null) {
-                return stream
+                return@withContext stream
             }
         }
-        return null
+        null
     }
 }
