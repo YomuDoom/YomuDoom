@@ -260,7 +260,9 @@ object OnlineCoverFetcher {
         return covers
     }
 
-    suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(Dispatchers.IO) {
+    suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
+        Dispatchers.IO,
+    ) {
         val available = getAvailableCovers(title, existingUrl)
         for (cover in available) {
             val stream = fetchStreamFromUrl(cover.url)
