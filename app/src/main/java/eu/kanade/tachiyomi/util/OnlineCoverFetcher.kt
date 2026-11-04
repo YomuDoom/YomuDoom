@@ -86,14 +86,22 @@ object OnlineCoverFetcher {
         // JPEG: FF D8 FF
         if (bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte()) return true
         // PNG: 89 50 4E 47
-        if (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()) return true
+        if (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && bytes[2] == 0x4E.toByte() &&
+            bytes[3] == 0x47.toByte()
+        ) {
+            return true
+        }
         // GIF: 47 49 46
         if (bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte()) return true
         // WEBP: RIFF....WEBP
         if (bytes.size >= 12 &&
-            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte() && bytes[3] == 0x46.toByte() &&
-            bytes[8] == 0x57.toByte() && bytes[9] == 0x45.toByte() && bytes[10] == 0x42.toByte() && bytes[11] == 0x50.toByte()
-        ) return true
+            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte() &&
+            bytes[3] == 0x46.toByte() &&
+            bytes[8] == 0x57.toByte() && bytes[9] == 0x45.toByte() && bytes[10] == 0x42.toByte() &&
+            bytes[11] == 0x50.toByte()
+        ) {
+            return true
+        }
         // BMP: 42 4D
         if (bytes[0] == 0x42.toByte() && bytes[1] == 0x4D.toByte()) return true
         return false
@@ -442,7 +450,8 @@ object OnlineCoverFetcher {
         val c = candidate.trim().lowercase().replace("[^a-z0-9]".toRegex(), "")
         return when {
             q == c -> 100
-            c.startsWith(q) && !c.contains("side") && !c.contains("relax") && !c.contains("spinoff") && !c.contains("spin-off") -> 80
+            c.startsWith(q) && !c.contains("side") && !c.contains("relax") && !c.contains("spinoff") &&
+                !c.contains("spin-off") -> 80
             c.startsWith(q) -> 50
             c.contains(q) -> 40
             else -> 10
