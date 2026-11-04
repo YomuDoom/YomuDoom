@@ -51,6 +51,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
 import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
@@ -75,6 +76,7 @@ class DownloadCache(
     private val storageManager: StorageManager = Injekt.get(),
     private val stubSourceRepository: StubSourceRepository = Injekt.get(),
     private val database: Database = Injekt.get(),
+    private val libraryPreferences: LibraryPreferences = Injekt.get(),
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -102,12 +104,19 @@ class DownloadCache(
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
     private val diskCacheFile: File
-        get() = File(context.cacheDir, "dl_index_cache_v3")
+        get() = File(context.cacheDir, "dl_index_cache_v5")
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
 
     init {
+        // Clean legacy cache files
+        try {
+            File(context.cacheDir, "dl_index_cache_v3").delete()
+            File(context.cacheDir, "dl_index_cache_v4").delete()
+        } catch (_: Throwable) {
+        }
+
         // Attempt to read cache file
         scope.launch {
             rootDownloadsDirMutex.withLock {
@@ -122,7 +131,10 @@ class DownloadCache(
                             it.isDirectory &&
                                 !it.name.isNullOrBlank()
                         }
-                        if (diskCache.sourceDirs.isEmpty() && hasPhysicalDirs) {
+                        val totalChapters = diskCache.sourceDirs.values.sumOf { sourceDir ->
+                            sourceDir.mangaDirs.values.sumOf { it.chapterDirs.size }
+                        }
+                        if (hasPhysicalDirs && (diskCache.sourceDirs.isEmpty() || totalChapters == 0)) {
                             lastRenew = 0L
                         } else {
                             lastRenew = System.currentTimeMillis()
@@ -135,6 +147,11 @@ class DownloadCache(
             }
             if (lastRenew == 0L) {
                 renewCache()
+            } else {
+                scope.launch {
+                    delay(3.seconds)
+                    renewCache(force = true)
+                }
             }
         }
 
@@ -183,14 +200,32 @@ class DownloadCache(
         renewCache()
 
         val sourceDir = rootDownloadsDir.sourceDirs[sourceId]
-        if (sourceDir != null) {
-            val mangaDir = sourceDir.mangaDirs[provider.getMangaDirName(mangaTitle)]
-            if (mangaDir != null) {
-                return provider.getValidChapterDirNames(
-                    chapterName,
-                    chapterScanlator,
-                    chapterUrl,
-                ).any { it in mangaDir.chapterDirs }
+        val disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get()
+        val mangaDir = sourceDir?.findMangaDir(mangaTitle, provider, disallowNonAscii)
+            ?: rootDownloadsDir.sourceDirs.values.firstNotNullOfOrNull {
+                it.findMangaDir(mangaTitle, provider, disallowNonAscii)
+            }
+
+        if (mangaDir != null) {
+            val validNames = provider.getValidChapterDirNames(
+                chapterName,
+                chapterScanlator,
+                chapterUrl,
+            )
+            val validBaseNames = validNames.map { it.removeSuffix(".cbz").removeSuffix(".zip") }
+
+            return mangaDir.chapterDirs.any { cached ->
+                val cachedBase = cached.removeSuffix(".cbz").removeSuffix(".zip")
+                val cachedWithoutHash = if (cachedBase.length > 7 && cachedBase[cachedBase.length - 7] == '_') {
+                    cachedBase.dropLast(7)
+                } else {
+                    cachedBase
+                }
+                validNames.any { it.equals(cached, ignoreCase = true) } ||
+                    validBaseNames.any { validBase ->
+                        validBase.equals(cachedBase, ignoreCase = true) ||
+                            validBase.equals(cachedWithoutHash, ignoreCase = true)
+                    }
             }
         }
         return false
@@ -218,13 +253,13 @@ class DownloadCache(
         renewCache()
 
         val sourceDir = rootDownloadsDir.sourceDirs[manga.source]
-        if (sourceDir != null) {
-            val mangaDir = sourceDir.mangaDirs[provider.getMangaDirName(manga.title)]
-            if (mangaDir != null) {
-                return mangaDir.chapterDirs.size
+        val disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get()
+        val mangaDir = sourceDir?.findMangaDir(manga.title, provider, disallowNonAscii)
+            ?: rootDownloadsDir.sourceDirs.values.firstNotNullOfOrNull {
+                it.findMangaDir(manga.title, provider, disallowNonAscii)
             }
-        }
-        return 0
+
+        return mangaDir?.chapterDirs?.size ?: 0
     }
 
     /**
@@ -269,7 +304,8 @@ class DownloadCache(
     suspend fun removeChapter(chapter: Chapter, manga: Manga) {
         rootDownloadsDirMutex.withLock {
             val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
-            val mangaDir = sourceDir.mangaDirs[provider.getMangaDirName(manga.title)] ?: return
+            val disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get()
+            val mangaDir = sourceDir.findMangaDir(manga.title, provider, disallowNonAscii) ?: return
             provider.getValidChapterDirNames(chapter.name, chapter.scanlator, chapter.url).forEach {
                 if (it in mangaDir.chapterDirs) {
                     mangaDir.chapterDirs -= it
@@ -289,7 +325,8 @@ class DownloadCache(
     suspend fun removeChapters(chapters: List<Chapter>, manga: Manga) {
         rootDownloadsDirMutex.withLock {
             val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
-            val mangaDir = sourceDir.mangaDirs[provider.getMangaDirName(manga.title)] ?: return
+            val disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get()
+            val mangaDir = sourceDir.findMangaDir(manga.title, provider, disallowNonAscii) ?: return
             chapters.forEach { chapter ->
                 provider.getValidChapterDirNames(chapter.name, chapter.scanlator, chapter.url).forEach {
                     if (it in mangaDir.chapterDirs) {
@@ -310,9 +347,10 @@ class DownloadCache(
     suspend fun removeManga(manga: Manga) {
         rootDownloadsDirMutex.withLock {
             val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
-            val mangaDirName = provider.getMangaDirName(manga.title)
-            if (sourceDir.mangaDirs.containsKey(mangaDirName)) {
-                sourceDir.mangaDirs -= mangaDirName
+            val disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get()
+            val mangaDir = sourceDir.findMangaDir(manga.title, provider, disallowNonAscii)
+            if (mangaDir != null) {
+                sourceDir.mangaDirs = sourceDir.mangaDirs.filterValues { it != mangaDir }
             }
         }
 
@@ -366,15 +404,15 @@ class DownloadCache(
         lastRenew = 0L
         renewalJob?.cancel()
         diskCacheFile.delete()
-        renewCache()
+        renewCache(force = true)
     }
 
     /**
      * Renews the downloads cache.
      */
-    private fun renewCache() {
+    private fun renewCache(force: Boolean = false) {
         // Avoid renewing cache if in the process nor too often
-        if (lastRenew + renewInterval >= System.currentTimeMillis() || renewalJob?.isActive == true) {
+        if ((!force && lastRenew + renewInterval >= System.currentTimeMillis()) || renewalJob?.isActive == true) {
             return
         }
 
@@ -437,32 +475,53 @@ class DownloadCache(
                         val dirName = dir.name!!
                         var resolvedSourceId: Long? = null
 
-                        // 1. Try matching with known stub sources by name prefix
-                        val matchingStub = stubSources.firstOrNull { stub ->
-                            dirName.startsWith("${stub.name} (", ignoreCase = true) ||
-                                dirName.equals(stub.name, ignoreCase = true)
+                        // 1. Try matching by source ID directly if folder name is numeric
+                        val idFromName = dirName.toLongOrNull()
+                        val isKnownId = idFromName != null && (
+                            allManga.any { it.source == idFromName } ||
+                                stubSources.any { it.id == idFromName }
+                            )
+                        if (isKnownId) {
+                            resolvedSourceId = idFromName
                         }
-                        if (matchingStub != null) {
-                            resolvedSourceId = matchingStub.id
-                            if (matchingStub.lang.isBlank()) {
-                                val langMatch = Regex("""\(([a-zA-Z0-9\-_]+)\)$""").find(dirName)
-                                val lang = langMatch?.groupValues?.get(1)?.lowercase().orEmpty()
-                                if (lang.isNotBlank()) {
-                                    stubSourceRepository.upsertStubSource(matchingStub.id, lang, matchingStub.name)
+
+                        // 2. Try matching with known stub sources by name prefix
+                        if (resolvedSourceId == null) {
+                            val matchingStub = stubSources.firstOrNull { stub ->
+                                dirName.startsWith("${stub.name} (", ignoreCase = true) ||
+                                    dirName.equals(stub.name, ignoreCase = true) ||
+                                    stub.name.startsWith(dirName, ignoreCase = true)
+                            }
+                            if (matchingStub != null) {
+                                resolvedSourceId = matchingStub.id
+                                if (matchingStub.lang.isBlank()) {
+                                    val langMatch = Regex("""\(([a-zA-Z0-9\-_]+)\)$""").find(dirName)
+                                    val lang = langMatch?.groupValues?.get(1)?.lowercase().orEmpty()
+                                    if (lang.isNotBlank()) {
+                                        stubSourceRepository.upsertStubSource(matchingStub.id, lang, matchingStub.name)
+                                    }
                                 }
                             }
                         }
 
-                        // 2. Try matching by subfolders (manga titles inside dir) against database mangas
+                        // 3. Try matching by subfolders (manga titles inside dir) against database mangas
                         if (resolvedSourceId == null && allManga.isNotEmpty()) {
-                            val subDirNames = dir.listFiles().orEmpty()
+                            val subDirs = dir.listFiles().orEmpty()
                                 .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                                .map { it.name!!.lowercase() }
+                            val subDirNames = subDirs.map { it.name!!.lowercase() }.toSet()
+                            val subDirNorms = subDirs
+                                .map { normalizeForMatch(it.name!!) }
+                                .filter { it.isNotBlank() }
                                 .toSet()
 
                             val matchedManga = allManga.firstOrNull { manga ->
                                 val mangaDirName = provider.getMangaDirName(manga.title).lowercase()
-                                mangaDirName in subDirNames
+                                val normTitle = normalizeForMatch(manga.title)
+                                val normDir = normalizeForMatch(mangaDirName)
+                                mangaDirName in subDirNames ||
+                                    manga.title.lowercase() in subDirNames ||
+                                    (normTitle.isNotBlank() && normTitle in subDirNorms) ||
+                                    (normDir.isNotBlank() && normDir in subDirNorms)
                             }
 
                             if (matchedManga != null) {
@@ -497,8 +556,10 @@ class DownloadCache(
                                         it.name?.endsWith(Downloader.TMP_DIR_SUFFIX) == true -> null
                                         // Folder of images
                                         it.isDirectory -> it.name
-                                        // CBZ files
-                                        it.isFile && it.extension == "cbz" -> it.nameWithoutExtension
+                                        // CBZ / ZIP files
+                                        it.isFile && (it.extension == "cbz" || it.extension == "zip") -> {
+                                            it.nameWithoutExtension
+                                        }
                                         // Anything else is irrelevant
                                         else -> null
                                     }
@@ -579,7 +640,42 @@ private class SourceDirectory(
     @Serializable(with = UniFileAsStringSerializer::class)
     val dir: UniFile?,
     var mangaDirs: Map<String, MangaDirectory> = mapOf(),
-)
+) {
+    fun findMangaDir(
+        mangaTitle: String,
+        provider: DownloadProvider,
+        disallowNonAscii: Boolean,
+    ): MangaDirectory? {
+        val defaultName = provider.getMangaDirName(mangaTitle)
+        mangaDirs[defaultName]?.let { return it }
+
+        val caseMatch = mangaDirs.entries.firstOrNull { it.key.equals(defaultName, ignoreCase = true) }
+        if (caseMatch != null) return caseMatch.value
+
+        val altName = DiskUtil.buildValidFilename(mangaTitle, disallowNonAscii = !disallowNonAscii)
+        if (altName != defaultName) {
+            mangaDirs[altName]?.let { return it }
+            val altCase = mangaDirs.entries.firstOrNull { it.key.equals(altName, ignoreCase = true) }
+            if (altCase != null) return altCase.value
+        }
+
+        mangaDirs[mangaTitle]?.let { return it }
+        val titleCase = mangaDirs.entries.firstOrNull { it.key.equals(mangaTitle, ignoreCase = true) }
+        if (titleCase != null) return titleCase.value
+
+        val normTitle = normalizeForMatch(mangaTitle)
+        if (normTitle.isNotBlank()) {
+            val normMatch = mangaDirs.entries.firstOrNull { normalizeForMatch(it.key) == normTitle }
+            if (normMatch != null) return normMatch.value
+        }
+
+        return null
+    }
+}
+
+private fun normalizeForMatch(text: String): String {
+    return text.lowercase().replace(Regex("""[^\p{L}\p{N}]+"""), "")
+}
 
 /**
  * Class to store the files under a manga directory.

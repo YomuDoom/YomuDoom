@@ -110,7 +110,23 @@ class DownloadProvider(
      * @param source the source of the manga.
      */
     fun findMangaDir(mangaTitle: String, source: Source): UniFile? {
-        val sourceDir = findSourceDir(source) ?: return null
+        val sourceDir = findSourceDir(source)
+        if (sourceDir != null) {
+            findMangaDirInSource(mangaTitle, sourceDir)?.let { return it }
+        }
+
+        // Fallback: search across all source directories in downloadsDir
+        val root = downloadsDir ?: return null
+        val allSourceDirs = root.listFiles().orEmpty().filter { it.isDirectory }
+        for (dir in allSourceDirs) {
+            if (dir == sourceDir) continue
+            findMangaDirInSource(mangaTitle, dir)?.let { return it }
+        }
+
+        return null
+    }
+
+    private fun findMangaDirInSource(mangaTitle: String, sourceDir: UniFile): UniFile? {
         val normalName = getMangaDirName(mangaTitle)
         val dir = sourceDir.findFile(normalName)
         if (dir != null && dir.exists()) return dir
@@ -122,6 +138,20 @@ class DownloadProvider(
         if (alternativeName != normalName) {
             val altDir = sourceDir.findFile(alternativeName)
             if (altDir != null && altDir.exists()) return altDir
+        }
+
+        val subDirs = sourceDir.listFiles().orEmpty().filter { it.isDirectory }
+        val caseMatch = subDirs.firstOrNull { it.name.equals(normalName, ignoreCase = true) }
+            ?: subDirs.firstOrNull { it.name.equals(mangaTitle, ignoreCase = true) }
+            ?: subDirs.firstOrNull { it.name.equals(alternativeName, ignoreCase = true) }
+        if (caseMatch != null) return caseMatch
+
+        val normTitle = mangaTitle.lowercase().replace(Regex("""[^\p{L}\p{N}]+"""), "")
+        if (normTitle.isNotBlank()) {
+            val normMatch = subDirs.firstOrNull {
+                it.name?.lowercase()?.replace(Regex("""[^\p{L}\p{N}]+"""), "") == normTitle
+            }
+            if (normMatch != null) return normMatch
         }
 
         return null
@@ -142,10 +172,35 @@ class DownloadProvider(
         mangaTitle: String,
         source: Source,
     ): UniFile? {
-        val mangaDir = findMangaDir(mangaTitle, source)
-        return getValidChapterDirNames(chapterName, chapterScanlator, chapterUrl).asSequence()
-            .mapNotNull { mangaDir?.findFile(it) }
-            .firstOrNull()
+        val mangaDir = findMangaDir(mangaTitle, source) ?: return null
+        val validNames = getValidChapterDirNames(chapterName, chapterScanlator, chapterUrl)
+        for (name in validNames) {
+            val file = mangaDir.findFile(name)
+            if (file != null && file.exists()) return file
+        }
+
+        val children = mangaDir.listFiles().orEmpty()
+        val caseMatch = children.firstOrNull { file ->
+            val fileName = file.name ?: return@firstOrNull false
+            validNames.any { it.equals(fileName, ignoreCase = true) }
+        }
+        if (caseMatch != null) return caseMatch
+
+        val validBaseNames = validNames.map { it.removeSuffix(".cbz").removeSuffix(".zip") }
+        val baseMatch = children.firstOrNull { file ->
+            val fileName = file.name ?: return@firstOrNull false
+            val fileBase = fileName.removeSuffix(".cbz").removeSuffix(".zip")
+            val fileWithoutHash = if (fileBase.length > 7 && fileBase[fileBase.length - 7] == '_') {
+                fileBase.dropLast(7)
+            } else {
+                fileBase
+            }
+            validBaseNames.any { validBase ->
+                validBase.equals(fileBase, ignoreCase = true) ||
+                    validBase.equals(fileWithoutHash, ignoreCase = true)
+            }
+        }
+        return baseMatch
     }
 
     /**
@@ -158,9 +213,7 @@ class DownloadProvider(
     fun findChapterDirs(chapters: List<Chapter>, manga: Manga, source: Source): Pair<UniFile?, List<UniFile>> {
         val mangaDir = findMangaDir(manga.title, source) ?: return null to emptyList()
         return mangaDir to chapters.mapNotNull { chapter ->
-            getValidChapterDirNames(chapter.name, chapter.scanlator, chapter.url).asSequence()
-                .mapNotNull { mangaDir.findFile(it) }
-                .firstOrNull()
+            findChapterDir(chapter.name, chapter.scanlator, chapter.url, manga.title, source)
         }
     }
 

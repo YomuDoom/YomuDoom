@@ -60,6 +60,20 @@ class StorageManager(
         if (base.name.equals(DOWNLOADS_PATH, ignoreCase = true)) {
             return base
         }
+        val subDownloads = base.findFile(DOWNLOADS_PATH)
+        if (subDownloads != null && subDownloads.isDirectory) {
+            return subDownloads
+        }
+        val subFiles = base.listFiles().orEmpty()
+        val hasKnownFolders = subFiles.any { file ->
+            file.isDirectory &&
+                !file.name.equals(AUTOMATIC_BACKUPS_PATH, ignoreCase = true) &&
+                !file.name.equals(LOCAL_SOURCE_PATH, ignoreCase = true) &&
+                !file.name.equals(DOWNLOADS_PATH, ignoreCase = true)
+        }
+        if (hasKnownFolders && subDownloads == null) {
+            return base
+        }
         return base.createDirectory(DOWNLOADS_PATH)
     }
 

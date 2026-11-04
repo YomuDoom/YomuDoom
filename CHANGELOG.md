@@ -1,5 +1,25 @@
 # YomuDoom Changelog
 
+## 0.21.15
+
+### Português (Brasil)
+
+- Corrige e aprimora de forma definitiva o reconhecimento de mangás e capítulos baixados ao reinstalar ou atualizar o app:
+  - Elimina cache obsoleto e força reindexação imediata do disco de downloads ao atualizar a versão do aplicativo (`dl_index_cache_v5`).
+  - Implementa busca e correspondência ultra resiliente a diferenças de maiúsculas/minúsculas, pontuação, acentuação e caracteres Unicode nos nomes das pastas de mangás (`findMangaDir`).
+  - Adiciona busca cruzada de mangás baixados: caso a fonte original não esteja identificada, o leitor e a biblioteca buscam os capítulos nas pastas de download existentes.
+  - Implementa tolerância a hashes de URL e extensões (`.cbz`, `.zip`) na detecção de capítulos baixados, permitindo que capítulos sejam reconhecidos mesmo se a URL da fonte tiver mudado.
+  - Permite leitura direta caso o usuário selecione uma pasta de armazenamento que já contenha as pastas das fontes ou mangás diretamente.
+
+### English
+
+- Fully fixes and hardens detection and recognition of downloaded manga and chapters after app reinstall or update:
+  - Discards stale disk caches and forces immediate re-indexing of download directories upon app upgrade (`dl_index_cache_v5`).
+  - Implements highly resilient case-insensitive and normalized alphanumeric directory matching for manga titles (`findMangaDir`).
+  - Adds cross-directory fallback: if a source ID is unmapped, both the library and reader locate the manga's chapters across existing download folders.
+  - Adds tolerance for URL MD5 hashes and archive extensions (`.cbz`, `.zip`) in chapter directory detection, keeping chapters marked as downloaded even if source URLs shifted.
+  - Supports base storage locations that directly contain source or manga folders without requiring a nested `downloads` subfolder.
+
 ## 0.21.14
 
 ### Português (Brasil)

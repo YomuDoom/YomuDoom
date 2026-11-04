@@ -182,6 +182,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             onMigrationComplete = {
                 logcat { "Updating last version to ${BuildConfig.VERSION_CODE}" }
                 preference.set(BuildConfig.VERSION_CODE)
+                try {
+                    Injekt.get<eu.kanade.tachiyomi.data.download.DownloadCache>().invalidateCache()
+                } catch (_: Throwable) {
+                }
             },
         )
     }
