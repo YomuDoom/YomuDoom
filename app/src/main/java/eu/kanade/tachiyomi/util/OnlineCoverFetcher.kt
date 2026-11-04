@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.util
 
 import android.graphics.BitmapFactory
 import eu.kanade.tachiyomi.network.NetworkHelper
+import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.lang.Hash
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -21,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.ByteArrayInputStream
@@ -133,13 +135,27 @@ object OnlineCoverFetcher {
         return false
     }
 
-    suspend fun fetchStreamFromUrl(url: String): InputStream? = withContext(Dispatchers.IO) {
+    suspend fun fetchStreamFromUrl(url: String, sourceId: Long? = null): InputStream? = withContext(Dispatchers.IO) {
         try {
             val reqBuilder = Request.Builder()
                 .url(url)
                 .header("User-Agent", USER_AGENT)
             if (url.contains("mangadex.org")) {
                 reqBuilder.header("Referer", "https://mangadex.org/")
+            }
+            if (sourceId != null) {
+                try {
+                    val sourceManager: SourceManager = Injekt.get()
+                    val httpSource = sourceManager.get(sourceId) as? HttpSource
+                    val headers = httpSource?.headers
+                    if (headers != null) {
+                        for ((name, value) in headers) {
+                            reqBuilder.header(name, value)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore header resolution error
+                }
             }
             val req = reqBuilder.build()
             coverClient.newCall(req).execute().use { resp ->
@@ -456,58 +472,22 @@ object OnlineCoverFetcher {
         return covers
     }
 
-    suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
+    suspend fun fetchCoverStream(
+        title: String,
+        existingUrl: String? = null,
+        sourceId: Long? = null,
+    ): InputStream? = withContext(
         Dispatchers.IO,
     ) {
-        // 1. SEMPRE TENTA A URL ORIGINAL DA FONTE PRIMEIRO! (timeout 5s)
+        // NUNCA faz adivinhação externa automática em lote para evitar atribuir capas de outras obras.
+        // Apenas tenta baixar a URL original e oficial fornecida pela fonte do mangá.
         if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
-            val stream = withTimeoutOrNull(5_000L) { fetchStreamFromUrl(existingUrl) }
-            if (stream != null) {
-                return@withContext stream
+            withTimeoutOrNull(6_000L) {
+                fetchStreamFromUrl(existingUrl, sourceId)
             }
+        } else {
+            null
         }
-
-        // 2. Se a URL original falhou (404, link morto, placeholder anti-hotlink descartado):
-        val queries = generateTitleQueries(title).take(2)
-        val onlineCovers = mutableListOf<AvailableCover>()
-        if (queries.isNotEmpty()) {
-            withTimeoutOrNull(8_000L) {
-                coroutineScope {
-                    val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
-                    val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
-                    val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
-
-                    onlineCovers.addAll(anilistDeferred.await())
-                    onlineCovers.addAll(mangaDexDeferred.await())
-                    onlineCovers.addAll(kitsuDeferred.await())
-                }
-            }
-        }
-
-        // EXIGE STRICT MATCH: score >= 60! NUNCA aceita obra aleatória.
-        val validCovers = onlineCovers.distinctBy { it.url }
-            .map { it to scoreCoverMatch(title, it) }
-            .filter { it.second >= 60 }
-            .sortedWith(
-                compareByDescending<Pair<AvailableCover, Int>> { it.second }
-                    .thenByDescending { (cover, _) ->
-                        when (cover.source) {
-                            "AniList" -> 3
-                            "MangaDex" -> 2
-                            "Kitsu" -> 1
-                            else -> 0
-                        }
-                    },
-            )
-
-        for ((cover, _) in validCovers) {
-            val stream = withTimeoutOrNull(5_000L) { fetchStreamFromUrl(cover.url) }
-            if (stream != null) {
-                return@withContext stream
-            }
-        }
-
-        null
     }
 
     fun scoreCoverMatch(query: String, cover: AvailableCover): Int {

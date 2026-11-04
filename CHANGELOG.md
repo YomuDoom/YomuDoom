@@ -1,5 +1,23 @@
 # YomuDoom Changelog
 
+## 0.21.13
+
+### Português (Brasil)
+
+- Elimina totalmente a adivinhação externa automática em lote:
+  - "Recuperar capas ausentes" agora busca estritamente as capas originais das fontes instaladas das obras, sem consultar bancos de dados externos automaticamente, prevenindo definitivamente a troca de capas entre obras diferentes.
+  - Injeta cabeçalhos oficiais da extensão de origem (User-Agent, Referer) nas requisições de capa para evitar bloqueios anti-hotlink e erros 403.
+  - "Restaurar capas originais" limpa de forma abrangente todas as capas customizadas atribuídas incorretamente e remove arquivos de placeholder corrompidos, forçando a revalidação imediata das artes originais da fonte.
+  - A seleção de capas de terceiros (AniList, MangaDex, Kitsu) permanece disponível exclusivamente via seleção manual consciente na tela de detalhes da obra ("Editar capa" -> "Capas disponíveis").
+
+### English
+
+- Completely removes automated external guessing in bulk operations:
+  - "Recover missing covers" now strictly retrieves official artwork from the manga's own source extension without querying external databases, permanently preventing cross-title cover mixups.
+  - Injects official source extension headers (User-Agent, Referer) during cover fetching to avoid 403 or anti-hotlink blocks.
+  - "Restore original covers" thoroughly purges all misassigned custom covers and cleans placeholder artifacts, instantly reverting every manga back to its authentic source cover.
+  - Third-party cover searching (AniList, MangaDex, Kitsu) remains available exclusively through conscious manual selection in the manga details screen ("Edit cover" -> "Available covers").
+
 ## 0.21.12
 
 ### Português (Brasil)

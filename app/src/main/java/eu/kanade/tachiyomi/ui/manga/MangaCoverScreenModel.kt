@@ -152,7 +152,7 @@ class MangaCoverScreenModel(
                 return@launchIO
             }
             try {
-                val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl, manga.source)
                 if (stream != null) {
                     stream.use {
                         manga.editCover(Injekt.get(), it, updateManga, coverCache)

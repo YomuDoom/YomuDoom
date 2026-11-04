@@ -809,8 +809,8 @@ class LibraryScreenModel(
                         }
                         context.notify(Notifications.ID_COVER_RECOVERY_PROGRESS, notifBuilder.build())
 
-                        val stream = withTimeoutOrNull(15_000L) {
-                            OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                        val stream = withTimeoutOrNull(10_000L) {
+                            OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl, manga.source)
                         }
                         if (stream != null) {
                             stream.use {
@@ -890,10 +890,21 @@ class LibraryScreenModel(
                 val allManga = getLibraryManga.await().map { it.manga }
                 var resetCount = 0
                 for (manga in allManga) {
+                    var modified = false
                     val customCoverFile = coverCache.getCustomCoverFile(manga.id)
                     if (customCoverFile.exists()) {
                         customCoverFile.delete()
                         coverCache.deleteCustomCover(manga.id)
+                        modified = true
+                    }
+                    val standardCoverFile = coverCache.getCoverFile(manga.thumbnailUrl)
+                    if (standardCoverFile != null && standardCoverFile.exists() &&
+                        (OnlineCoverFetcher.isPlaceholder(standardCoverFile) || standardCoverFile.length() < 32)
+                    ) {
+                        standardCoverFile.delete()
+                        modified = true
+                    }
+                    if (modified) {
                         updateManga.awaitUpdateCoverLastModified(manga.id)
                         resetCount++
                     }
