@@ -1,5 +1,23 @@
 # YomuDoom Changelog
 
+## 0.21.12
+
+### Português (Brasil)
+
+- Corrige travamento na recuperação de capas em bibliotecas grandes:
+  - Adiciona fechamento estrito de conexões HTTP (`use`), evitando esgotamento de conexões no pool do OkHttp.
+  - Implementa cliente HTTP dedicado para capas com timeouts rápidos (5s connect / 8s read / 10s call).
+  - Adiciona timeout individual de 15 segundos por obra, garantindo que um link indisponível ou lento nunca bloqueie o restante da fila.
+  - Limita buscas externas a no máximo 2 variações de título para evitar throttling e rate-limiting (429).
+
+### English
+
+- Fixes cover recovery freeze/hang on large libraries:
+  - Enforces strict HTTP response closure (`use`), preventing OkHttp connection pool starvation.
+  - Adds dedicated cover HTTP client with fast timeouts (5s connect / 8s read / 10s call).
+  - Adds 15-second per-entry timeout, ensuring slow or dead links never hang the recovery queue.
+  - Limits external queries to at most 2 variations per title to prevent throttling and rate-limiting (429).
+
 ## 0.21.11
 
 ### Português (Brasil)

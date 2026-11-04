@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import logcat.LogPriority
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.system.logcat
@@ -25,6 +27,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 data class AvailableCover(
     val url: String,
@@ -39,6 +42,28 @@ object OnlineCoverFetcher {
     private val json = Json { ignoreUnknownKeys = true }
     private const val USER_AGENT = "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)"
     private const val MANGADEX_PLACEHOLDER_MD5 = "694855f70d4887848147c6debe9c96dc"
+
+    private val coverClient: OkHttpClient by lazy {
+        val networkHelper: NetworkHelper = Injekt.get()
+        OkHttpClient.Builder()
+            .cookieJar(networkHelper.cookieJar)
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(8, TimeUnit.SECONDS)
+            .callTimeout(10, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val host = request.url.host
+                if (host.contains("mangadex.org") && request.header("Referer") == null) {
+                    val newRequest = request.newBuilder()
+                        .header("Referer", "https://mangadex.org/")
+                        .build()
+                    chain.proceed(newRequest)
+                } else {
+                    chain.proceed(request)
+                }
+            }
+            .build()
+    }
 
     fun isPlaceholder(file: File): Boolean {
         if (!file.exists()) return false
@@ -109,8 +134,6 @@ object OnlineCoverFetcher {
     }
 
     suspend fun fetchStreamFromUrl(url: String): InputStream? = withContext(Dispatchers.IO) {
-        val networkHelper: NetworkHelper = Injekt.get()
-        val client = networkHelper.client
         try {
             val reqBuilder = Request.Builder()
                 .url(url)
@@ -119,16 +142,17 @@ object OnlineCoverFetcher {
                 reqBuilder.header("Referer", "https://mangadex.org/")
             }
             val req = reqBuilder.build()
-            val resp = client.newCall(req).execute()
-            if (resp.isSuccessful) {
-                val bytes = resp.body.bytes()
-                if (isImage(bytes) && !isPlaceholder(bytes)) {
-                    ByteArrayInputStream(bytes)
+            coverClient.newCall(req).execute().use { resp ->
+                if (resp.isSuccessful) {
+                    val bytes = resp.body.bytes()
+                    if (isImage(bytes) && !isPlaceholder(bytes)) {
+                        ByteArrayInputStream(bytes)
+                    } else {
+                        null
+                    }
                 } else {
                     null
                 }
-            } else {
-                null
             }
         } catch (e: Exception) {
             logcat(LogPriority.DEBUG, e)
@@ -221,8 +245,6 @@ object OnlineCoverFetcher {
     }
 
     private fun fetchAniListCovers(queries: List<String>): List<AvailableCover> {
-        val networkHelper: NetworkHelper = Injekt.get()
-        val client = networkHelper.client
         val covers = mutableListOf<AvailableCover>()
 
         val graphQuery = """
@@ -246,7 +268,7 @@ object OnlineCoverFetcher {
             }
         """.trimIndent()
 
-        for (query in queries) {
+        for (query in queries.take(2)) {
             if (query.isBlank()) continue
             try {
                 val payload = buildJsonObject {
@@ -267,42 +289,45 @@ object OnlineCoverFetcher {
                     .post(payload.toRequestBody("application/json".toMediaType()))
                     .build()
 
-                val resp = client.newCall(req).execute()
-                if (resp.isSuccessful) {
-                    val bodyStr = resp.body.string()
-                    val root = json.parseToJsonElement(bodyStr).jsonObject
-                    val mediaList = root["data"]?.jsonObject?.get("Page")?.jsonObject?.get("media")?.jsonArray.orEmpty()
+                coverClient.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val bodyStr = resp.body.string()
+                        val root = json.parseToJsonElement(bodyStr).jsonObject
+                        val mediaList = root["data"]?.jsonObject?.get(
+                            "Page",
+                        )?.jsonObject?.get("media")?.jsonArray.orEmpty()
 
-                    for (m in mediaList) {
-                        val mObj = m.jsonObject
-                        val titleObj = mObj["title"]?.jsonObject
-                        val englishTitle = titleObj?.get("english")?.jsonPrimitive?.contentOrNull
-                        val romajiTitle = titleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
-                        val nativeTitle = titleObj?.get("native")?.jsonPrimitive?.contentOrNull
-                        val synonyms = mObj["synonyms"]?.jsonArray.orEmpty().mapNotNull {
-                            it.jsonPrimitive.contentOrNull
-                        }
-                        val allAlts = (synonyms + listOfNotNull(englishTitle, romajiTitle, nativeTitle)).distinct()
-                        val coverObj = mObj["coverImage"]?.jsonObject
-                        val imgUrl = coverObj?.get("extraLarge")?.jsonPrimitive?.contentOrNull
-                            ?: coverObj?.get("large")?.jsonPrimitive?.contentOrNull
+                        for (m in mediaList) {
+                            val mObj = m.jsonObject
+                            val titleObj = mObj["title"]?.jsonObject
+                            val englishTitle = titleObj?.get("english")?.jsonPrimitive?.contentOrNull
+                            val romajiTitle = titleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+                            val nativeTitle = titleObj?.get("native")?.jsonPrimitive?.contentOrNull
+                            val synonyms = mObj["synonyms"]?.jsonArray.orEmpty().mapNotNull {
+                                it.jsonPrimitive.contentOrNull
+                            }
+                            val allAlts = (synonyms + listOfNotNull(englishTitle, romajiTitle, nativeTitle)).distinct()
+                            val coverObj = mObj["coverImage"]?.jsonObject
+                            val imgUrl = coverObj?.get("extraLarge")?.jsonPrimitive?.contentOrNull
+                                ?: coverObj?.get("large")?.jsonPrimitive?.contentOrNull
 
-                        if (!imgUrl.isNullOrBlank()) {
-                            val desc = englishTitle ?: romajiTitle ?: "Poster"
-                            covers.add(
-                                AvailableCover(
-                                    url = imgUrl,
-                                    description = desc,
-                                    source = "AniList",
-                                    data = imgUrl,
-                                    altTitles = allAlts,
-                                ),
-                            )
+                            if (!imgUrl.isNullOrBlank()) {
+                                val desc = englishTitle ?: romajiTitle ?: "Poster"
+                                covers.add(
+                                    AvailableCover(
+                                        url = imgUrl,
+                                        description = desc,
+                                        source = "AniList",
+                                        data = imgUrl,
+                                        altTitles = allAlts,
+                                    ),
+                                )
+                            }
                         }
                     }
-
-                    if (covers.isNotEmpty()) break
                 }
+
+                if (covers.isNotEmpty()) break
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e)
             }
@@ -311,11 +336,9 @@ object OnlineCoverFetcher {
     }
 
     private fun fetchKitsuCovers(queries: List<String>): List<AvailableCover> {
-        val networkHelper: NetworkHelper = Injekt.get()
-        val client = networkHelper.client
         val covers = mutableListOf<AvailableCover>()
 
-        for (query in queries) {
+        for (query in queries.take(2)) {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
@@ -325,41 +348,42 @@ object OnlineCoverFetcher {
                     .header("User-Agent", USER_AGENT)
                     .header("Accept", "application/vnd.api+json")
                     .build()
-                val resp = client.newCall(req).execute()
-                if (resp.isSuccessful) {
-                    val bodyStr = resp.body.string()
-                    val root = json.parseToJsonElement(bodyStr).jsonObject
-                    val dataList = root["data"]?.jsonArray.orEmpty()
+                coverClient.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val bodyStr = resp.body.string()
+                        val root = json.parseToJsonElement(bodyStr).jsonObject
+                        val dataList = root["data"]?.jsonArray.orEmpty()
 
-                    for (item in dataList) {
-                        val itemObj = item.jsonObject
-                        val attr = itemObj["attributes"]?.jsonObject ?: continue
-                        val posterObj = attr["posterImage"]?.jsonObject
-                        val imgUrl = posterObj?.get("large")?.jsonPrimitive?.contentOrNull
-                            ?: posterObj?.get("original")?.jsonPrimitive?.contentOrNull
-                            ?: posterObj?.get("medium")?.jsonPrimitive?.contentOrNull
+                        for (item in dataList) {
+                            val itemObj = item.jsonObject
+                            val attr = itemObj["attributes"]?.jsonObject ?: continue
+                            val posterObj = attr["posterImage"]?.jsonObject
+                            val imgUrl = posterObj?.get("large")?.jsonPrimitive?.contentOrNull
+                                ?: posterObj?.get("original")?.jsonPrimitive?.contentOrNull
+                                ?: posterObj?.get("medium")?.jsonPrimitive?.contentOrNull
 
-                        if (!imgUrl.isNullOrBlank()) {
-                            val canonTitle = attr["canonicalTitle"]?.jsonPrimitive?.contentOrNull
-                            val subtype = attr["subtype"]?.jsonPrimitive?.contentOrNull
-                            val desc = if (!subtype.isNullOrBlank()) {
-                                "${canonTitle ?: "Poster"} ($subtype)"
-                            } else {
-                                canonTitle ?: "Poster"
+                            if (!imgUrl.isNullOrBlank()) {
+                                val canonTitle = attr["canonicalTitle"]?.jsonPrimitive?.contentOrNull
+                                val subtype = attr["subtype"]?.jsonPrimitive?.contentOrNull
+                                val desc = if (!subtype.isNullOrBlank()) {
+                                    "${canonTitle ?: "Poster"} ($subtype)"
+                                } else {
+                                    canonTitle ?: "Poster"
+                                }
+                                covers.add(
+                                    AvailableCover(
+                                        url = imgUrl,
+                                        description = desc,
+                                        source = "Kitsu",
+                                        data = imgUrl,
+                                    ),
+                                )
                             }
-                            covers.add(
-                                AvailableCover(
-                                    url = imgUrl,
-                                    description = desc,
-                                    source = "Kitsu",
-                                    data = imgUrl,
-                                ),
-                            )
                         }
                     }
-
-                    if (covers.isNotEmpty()) break
                 }
+
+                if (covers.isNotEmpty()) break
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e)
             }
@@ -368,11 +392,9 @@ object OnlineCoverFetcher {
     }
 
     private fun fetchMangaDexCovers(queries: List<String>): List<AvailableCover> {
-        val networkHelper: NetworkHelper = Injekt.get()
-        val client = networkHelper.client
         val covers = mutableListOf<AvailableCover>()
 
-        for (query in queries) {
+        for (query in queries.take(2)) {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
@@ -382,49 +404,51 @@ object OnlineCoverFetcher {
                     .url(searchUrl)
                     .header("User-Agent", USER_AGENT)
                     .build()
-                val searchResp = client.newCall(searchReq).execute()
-                if (searchResp.isSuccessful) {
-                    val bodyStr = searchResp.body.string()
-                    val root = json.parseToJsonElement(bodyStr).jsonObject
-                    val mangaList = root["data"]?.jsonArray.orEmpty()
+                coverClient.newCall(searchReq).execute().use { searchResp ->
+                    if (searchResp.isSuccessful) {
+                        val bodyStr = searchResp.body.string()
+                        val root = json.parseToJsonElement(bodyStr).jsonObject
+                        val mangaList = root["data"]?.jsonArray.orEmpty()
 
-                    for (mangaElem in mangaList) {
-                        val mangaObj = mangaElem.jsonObject
-                        val mangaId = mangaObj["id"]?.jsonPrimitive?.contentOrNull ?: continue
-                        val attr = mangaObj["attributes"]?.jsonObject
-                        val titleMap = attr?.get("title")?.jsonObject
-                        val mangaTitle = titleMap?.values?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "Capa oficial"
-                        val altTitlesList = attr?.get("altTitles")?.jsonArray.orEmpty().mapNotNull { altObj ->
-                            altObj.jsonObject.values.firstOrNull()?.jsonPrimitive?.contentOrNull
-                        }
+                        for (mangaElem in mangaList) {
+                            val mangaObj = mangaElem.jsonObject
+                            val mangaId = mangaObj["id"]?.jsonPrimitive?.contentOrNull ?: continue
+                            val attr = mangaObj["attributes"]?.jsonObject
+                            val titleMap = attr?.get("title")?.jsonObject
+                            val mangaTitle =
+                                titleMap?.values?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "Capa oficial"
+                            val altTitlesList = attr?.get("altTitles")?.jsonArray.orEmpty().mapNotNull { altObj ->
+                                altObj.jsonObject.values.firstOrNull()?.jsonPrimitive?.contentOrNull
+                            }
 
-                        val rels = mangaObj["relationships"]?.jsonArray.orEmpty()
-                        var coverFile: String? = null
-                        for (rel in rels) {
-                            val relObj = rel.jsonObject
-                            if (relObj["type"]?.jsonPrimitive?.contentOrNull == "cover_art") {
-                                val relAttr = relObj["attributes"]?.jsonObject
-                                coverFile = relAttr?.get("fileName")?.jsonPrimitive?.contentOrNull
-                                if (!coverFile.isNullOrBlank()) break
+                            val rels = mangaObj["relationships"]?.jsonArray.orEmpty()
+                            var coverFile: String? = null
+                            for (rel in rels) {
+                                val relObj = rel.jsonObject
+                                if (relObj["type"]?.jsonPrimitive?.contentOrNull == "cover_art") {
+                                    val relAttr = relObj["attributes"]?.jsonObject
+                                    coverFile = relAttr?.get("fileName")?.jsonPrimitive?.contentOrNull
+                                    if (!coverFile.isNullOrBlank()) break
+                                }
+                            }
+
+                            if (!coverFile.isNullOrBlank()) {
+                                val imgUrl = "https://uploads.mangadex.org/covers/$mangaId/$coverFile.512.jpg"
+                                covers.add(
+                                    AvailableCover(
+                                        url = imgUrl,
+                                        description = mangaTitle,
+                                        source = "MangaDex",
+                                        data = imgUrl,
+                                        altTitles = altTitlesList,
+                                    ),
+                                )
                             }
                         }
-
-                        if (!coverFile.isNullOrBlank()) {
-                            val imgUrl = "https://uploads.mangadex.org/covers/$mangaId/$coverFile.512.jpg"
-                            covers.add(
-                                AvailableCover(
-                                    url = imgUrl,
-                                    description = mangaTitle,
-                                    source = "MangaDex",
-                                    data = imgUrl,
-                                    altTitles = altTitlesList,
-                                ),
-                            )
-                        }
                     }
-
-                    if (covers.isNotEmpty()) break
                 }
+
+                if (covers.isNotEmpty()) break
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e)
             }
@@ -435,26 +459,28 @@ object OnlineCoverFetcher {
     suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
         Dispatchers.IO,
     ) {
-        // 1. SEMPRE TENTA A URL ORIGINAL DA FONTE PRIMEIRO!
+        // 1. SEMPRE TENTA A URL ORIGINAL DA FONTE PRIMEIRO! (timeout 5s)
         if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
-            val stream = fetchStreamFromUrl(existingUrl)
+            val stream = withTimeoutOrNull(5_000L) { fetchStreamFromUrl(existingUrl) }
             if (stream != null) {
                 return@withContext stream
             }
         }
 
         // 2. Se a URL original falhou (404, link morto, placeholder anti-hotlink descartado):
-        val queries = generateTitleQueries(title)
+        val queries = generateTitleQueries(title).take(2)
         val onlineCovers = mutableListOf<AvailableCover>()
         if (queries.isNotEmpty()) {
-            coroutineScope {
-                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
-                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
-                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+            withTimeoutOrNull(8_000L) {
+                coroutineScope {
+                    val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
+                    val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+                    val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
 
-                onlineCovers.addAll(anilistDeferred.await())
-                onlineCovers.addAll(mangaDexDeferred.await())
-                onlineCovers.addAll(kitsuDeferred.await())
+                    onlineCovers.addAll(anilistDeferred.await())
+                    onlineCovers.addAll(mangaDexDeferred.await())
+                    onlineCovers.addAll(kitsuDeferred.await())
+                }
             }
         }
 
@@ -475,7 +501,7 @@ object OnlineCoverFetcher {
             )
 
         for ((cover, _) in validCovers) {
-            val stream = fetchStreamFromUrl(cover.url)
+            val stream = withTimeoutOrNull(5_000L) { fetchStreamFromUrl(cover.url) }
             if (stream != null) {
                 return@withContext stream
             }

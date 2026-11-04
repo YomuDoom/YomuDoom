@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import logcat.LogPriority
 import mihon.core.common.utils.mutate
 import tachiyomi.core.common.i18n.stringResource
@@ -808,7 +809,9 @@ class LibraryScreenModel(
                         }
                         context.notify(Notifications.ID_COVER_RECOVERY_PROGRESS, notifBuilder.build())
 
-                        val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                        val stream = withTimeoutOrNull(15_000L) {
+                            OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
+                        }
                         if (stream != null) {
                             stream.use {
                                 manga.editCover(Injekt.get(), it, updateManga, coverCache)
