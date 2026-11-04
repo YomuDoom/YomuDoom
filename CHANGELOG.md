@@ -1,5 +1,27 @@
 # YomuDoom Changelog
 
+## 0.21.14
+
+### Português (Brasil)
+
+- Corrige o reconhecimento de capítulos baixados após reinstalar o app e restaurar backup:
+  - Adiciona `SourcesRestorer` para restaurar e persistir fontes stub diretamente no banco de dados durante a restauração do backup, preservando nome e idioma da fonte mesmo antes de reinstalar as extensões.
+  - Salva o idioma da fonte (`lang`) nos metadados de backup de fontes (`BackupSource`), garantindo correspondência exata das pastas de download.
+  - Implementa resolução dinâmica e auto-descoberta no `DownloadCache`: caso uma pasta de download pertença a uma fonte ainda não mapeada, o app analisa o nome da pasta e as obras internas comparando com o banco de dados e registra a fonte automaticamente.
+  - Atualiza `DownloadProvider` para buscar diretórios de fontes e mangás por correspondência aproximada e fallback de caracteres não-ASCII, garantindo que capítulos baixados sejam encontrados e possam ser lidos mesmo offline ou sem extensões instaladas.
+  - Conecta o `DownloadCache` às mudanças de extensões instaladas (`installedExtensionsFlow`) e invalida o cache persistido se estiver vazio ao inicializar com arquivos presentes no disco.
+  - Protege `StorageManager` contra seleção aninhada caso o usuário selecione a própria pasta `downloads` como local de armazenamento.
+
+### English
+
+- Fixes downloaded chapters not being recognized after reinstalling the app and restoring a backup:
+  - Adds `SourcesRestorer` to restore and persist stub sources into the database during backup restoration, retaining source name and language even before reinstalling extensions.
+  - Saves source language (`lang`) in source backup metadata (`BackupSource`) for exact download folder matching.
+  - Implements dynamic source resolution and auto-discovery in `DownloadCache`: if a download folder belongs to a source not yet mapped, it inspects folder names and inner manga against the database to automatically register the source.
+  - Enhances `DownloadProvider` to locate source and manga directories using fuzzy/cache matching and non-ASCII fallback, enabling offline reading even without installed extensions.
+  - Observes `installedExtensionsFlow` in `DownloadCache` to instantly refresh index upon extension installation and invalidates empty disk cache on startup when folders exist on disk.
+  - Guards `StorageManager` against nested directory creation if the user selects the `downloads` folder as their base storage location.
+
 ## 0.21.13
 
 ### Português (Brasil)

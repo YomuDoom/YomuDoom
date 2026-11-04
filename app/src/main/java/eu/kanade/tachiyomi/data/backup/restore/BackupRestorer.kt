@@ -8,11 +8,13 @@ import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionStore
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
+import eu.kanade.tachiyomi.data.backup.models.BackupSource
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CategoriesRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionStoreRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.MangaRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.PreferenceRestorer
+import eu.kanade.tachiyomi.data.backup.restore.restorers.SourcesRestorer
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,7 @@ class BackupRestorer(
     private val preferenceRestorer: PreferenceRestorer = PreferenceRestorer(context),
     private val extensionStoreRestorer: ExtensionStoreRestorer = ExtensionStoreRestorer(),
     private val mangaRestorer: MangaRestorer = MangaRestorer(),
+    private val sourcesRestorer: SourcesRestorer = SourcesRestorer(),
 ) {
 
     private var restoreAmount = 0
@@ -106,8 +109,14 @@ class BackupRestorer(
         if (options.sourceSettings) {
             restoreAmount += 1
         }
+        if (backup.backupSources.isNotEmpty()) {
+            restoreAmount += 1
+        }
 
         coroutineScope {
+            if (backup.backupSources.isNotEmpty()) {
+                restoreSources(backup.backupSources)
+            }
             if (options.categories) {
                 restoreCategories(backup.backupCategories)
             }
@@ -126,6 +135,19 @@ class BackupRestorer(
 
             // TODO: optionally trigger online library + tracker update
         }
+    }
+
+    private fun CoroutineScope.restoreSources(backupSources: List<BackupSource>) = launch {
+        ensureActive()
+        sourcesRestorer(backupSources)
+
+        val progress = restoreProgress.incrementAndFetch()
+        notifier.showRestoreProgress(
+            context.stringResource(MR.strings.label_sources),
+            progress,
+            restoreAmount,
+            isSync,
+        )
     }
 
     private fun CoroutineScope.restoreCategories(backupCategories: List<BackupCategory>) = launch {

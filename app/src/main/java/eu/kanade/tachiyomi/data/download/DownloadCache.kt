@@ -3,9 +3,11 @@ package eu.kanade.tachiyomi.data.download
 import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -45,8 +49,10 @@ import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.data.Database
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.storage.service.StorageManager
 import uy.kohesive.injekt.Injekt
@@ -67,6 +73,8 @@ class DownloadCache(
     private val sourceManager: SourceManager = Injekt.get(),
     private val extensionManager: ExtensionManager = Injekt.get(),
     private val storageManager: StorageManager = Injekt.get(),
+    private val stubSourceRepository: StubSourceRepository = Injekt.get(),
+    private val database: Database = Injekt.get(),
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -109,18 +117,41 @@ class DownloadCache(
                             ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
                         }
                         rootDownloadsDir = diskCache
-                        lastRenew = System.currentTimeMillis()
+                        val downloadsDir = storageManager.getDownloadsDirectory()
+                        val hasPhysicalDirs = downloadsDir?.listFiles().orEmpty().any { it.isDirectory && !it.name.isNullOrBlank() }
+                        if (diskCache.sourceDirs.isEmpty() && hasPhysicalDirs) {
+                            lastRenew = 0L
+                        } else {
+                            lastRenew = System.currentTimeMillis()
+                        }
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Failed to initialize from disk cache" }
                     diskCacheFile.delete()
                 }
             }
+            if (lastRenew == 0L) {
+                renewCache()
+            }
         }
 
         storageManager.changes
             .onEach { invalidateCache() }
             .launchIn(scope)
+
+        extensionManager.installedExtensionsFlow
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { invalidateCache() }
+            .launchIn(scope)
+    }
+
+    /**
+     * Returns the download directory for a given source ID if cached.
+     */
+    fun getSourceDirectory(sourceId: Long): UniFile? {
+        renewCache()
+        return rootDownloadsDir.sourceDirs[sourceId]?.dir
     }
 
     /**
@@ -358,18 +389,96 @@ class DownloadCache(
                 sources = getSources()
             }
 
-            val sourceMap = sources.associate { provider.getSourceDirName(it).lowercase() to it.id }
+            val sourceMap = mutableMapOf<String, Long>()
+            sources.forEach { source ->
+                val primaryName = provider.getSourceDirName(source).lowercase()
+                sourceMap[primaryName] = source.id
+                val nameOnly = DiskUtil.buildValidFilename(source.name).lowercase()
+                if (nameOnly.isNotBlank()) {
+                    sourceMap.putIfAbsent(nameOnly, source.id)
+                }
+                if (source.lang.isNotBlank()) {
+                    sourceMap.putIfAbsent("$nameOnly (${source.lang.lowercase()})", source.id)
+                }
+            }
 
             rootDownloadsDirMutex.withLock {
                 val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
-
-                updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
+                val rawSourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
                     .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                    .mapNotNull { dir ->
-                        val sourceId = sourceMap[dir.name!!.lowercase()]
-                        sourceId?.let { it to SourceDirectory(dir) }
+
+                val resolvedDirs = mutableMapOf<Long, SourceDirectory>()
+                val unmatchedDirs = mutableListOf<UniFile>()
+
+                for (dir in rawSourceDirs) {
+                    val dirName = dir.name!!.lowercase()
+                    val sourceId = sourceMap[dirName]
+                    if (sourceId != null) {
+                        resolvedDirs[sourceId] = SourceDirectory(dir)
+                    } else {
+                        unmatchedDirs.add(dir)
                     }
-                    .toMap()
+                }
+
+                if (unmatchedDirs.isNotEmpty()) {
+                    val allManga = try {
+                        database.mangasQueries.getAllMangaTitlesAndSources().awaitAsList()
+                    } catch (e: Throwable) {
+                        logcat(LogPriority.WARN, e) { "DownloadCache: failed to query manga for directory matching" }
+                        emptyList()
+                    }
+
+                    val stubSources = sourceManager.getStubSources()
+
+                    for (dir in unmatchedDirs) {
+                        val dirName = dir.name!!
+                        var resolvedSourceId: Long? = null
+
+                        // 1. Try matching with known stub sources by name prefix
+                        val matchingStub = stubSources.firstOrNull { stub ->
+                            dirName.startsWith("${stub.name} (", ignoreCase = true) ||
+                                dirName.equals(stub.name, ignoreCase = true)
+                        }
+                        if (matchingStub != null) {
+                            resolvedSourceId = matchingStub.id
+                            if (matchingStub.lang.isBlank()) {
+                                val langMatch = Regex("""\(([a-zA-Z0-9\-_]+)\)$""").find(dirName)
+                                val lang = langMatch?.groupValues?.get(1)?.lowercase().orEmpty()
+                                if (lang.isNotBlank()) {
+                                    stubSourceRepository.upsertStubSource(matchingStub.id, lang, matchingStub.name)
+                                }
+                            }
+                        }
+
+                        // 2. Try matching by subfolders (manga titles inside dir) against database mangas
+                        if (resolvedSourceId == null && allManga.isNotEmpty()) {
+                            val subDirNames = dir.listFiles().orEmpty()
+                                .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                                .map { it.name!!.lowercase() }
+                                .toSet()
+
+                            val matchedManga = allManga.firstOrNull { manga ->
+                                val mangaDirName = provider.getMangaDirName(manga.title).lowercase()
+                                mangaDirName in subDirNames
+                            }
+
+                            if (matchedManga != null) {
+                                resolvedSourceId = matchedManga.source
+                                val langMatch = Regex("""^(.+?)(?:\s*\(([a-zA-Z0-9\-_]+)\))?$""").find(dirName)
+                                val sourceName = langMatch?.groupValues?.get(1)?.trim() ?: dirName
+                                val lang = langMatch?.groupValues?.getOrNull(2)?.lowercase().orEmpty()
+                                stubSourceRepository.upsertStubSource(matchedManga.source, lang, sourceName)
+                            }
+                        }
+
+                        if (resolvedSourceId != null) {
+                            resolvedDirs[resolvedSourceId] = SourceDirectory(dir)
+                            sourceMap[dirName.lowercase()] = resolvedSourceId
+                        }
+                    }
+                }
+
+                updatedRootDir.sourceDirs = resolvedDirs
 
                 updatedRootDir.sourceDirs.values.map { sourceDir ->
                     async {

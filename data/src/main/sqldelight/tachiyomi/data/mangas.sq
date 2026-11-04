@@ -99,6 +99,10 @@ getAllMangaSourceAndUrl:
 SELECT source, url
 FROM mangas;
 
+getAllMangaTitlesAndSources:
+SELECT source, title
+FROM mangas;
+
 getMangasWithFavoriteTimestamp:
 SELECT *
 FROM mangas

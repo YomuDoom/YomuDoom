@@ -14,7 +14,7 @@ class StubSource(
     override val name: String,
 ) : Source {
 
-    private val isInvalid: Boolean = name.isBlank() || lang.isBlank()
+    private val isInvalid: Boolean = name.isBlank()
 
     override val supportsLatest: Boolean = false
 
@@ -35,8 +35,11 @@ class StubSource(
     override suspend fun getPageList(chapter: SChapter): List<Page> =
         throw SourceNotInstalledException()
 
-    override fun toString(): String =
-        if (!isInvalid) "$name (${lang.uppercase()})" else id.toString()
+    override fun toString(): String = when {
+        name.isNotBlank() && lang.isNotBlank() -> "$name (${lang.uppercase()})"
+        name.isNotBlank() -> name
+        else -> id.toString()
+    }
 
     companion object {
         fun from(source: Source): StubSource {

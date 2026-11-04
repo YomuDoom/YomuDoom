@@ -77,7 +77,30 @@ class DownloadProvider(
      * @param source the source to query.
      */
     fun findSourceDir(source: Source): UniFile? {
-        return downloadsDir?.findFile(getSourceDirName(source))
+        val root = downloadsDir ?: return null
+        val defaultDir = root.findFile(getSourceDirName(source))
+        if (defaultDir != null && defaultDir.exists()) return defaultDir
+
+        // Check download cache if already mapped
+        try {
+            val cachedDir = Injekt.get<DownloadCache>().getSourceDirectory(source.id)
+            if (cachedDir != null && cachedDir.exists()) return cachedDir
+        } catch (_: Throwable) {
+        }
+
+        // Fallback: search directory by source name or prefix
+        val sourceDirPrefix = DiskUtil.buildValidFilename(
+            source.name,
+            disallowNonAscii = libraryPreferences.disallowNonAsciiFilenames.get(),
+        ).lowercase()
+
+        return root.listFiles().orEmpty().firstOrNull { file ->
+            if (!file.isDirectory) return@firstOrNull false
+            val name = file.name?.lowercase() ?: return@firstOrNull false
+            name == sourceDirPrefix ||
+                name.startsWith("$sourceDirPrefix (") ||
+                name == source.id.toString()
+        }
     }
 
     /**
@@ -87,8 +110,21 @@ class DownloadProvider(
      * @param source the source of the manga.
      */
     fun findMangaDir(mangaTitle: String, source: Source): UniFile? {
-        val sourceDir = findSourceDir(source)
-        return sourceDir?.findFile(getMangaDirName(mangaTitle))
+        val sourceDir = findSourceDir(source) ?: return null
+        val normalName = getMangaDirName(mangaTitle)
+        val dir = sourceDir.findFile(normalName)
+        if (dir != null && dir.exists()) return dir
+
+        val alternativeName = DiskUtil.buildValidFilename(
+            mangaTitle,
+            disallowNonAscii = !libraryPreferences.disallowNonAsciiFilenames.get(),
+        )
+        if (alternativeName != normalName) {
+            val altDir = sourceDir.findFile(alternativeName)
+            if (altDir != null && altDir.exists()) return altDir
+        }
+
+        return null
     }
 
     /**

@@ -56,7 +56,11 @@ class StorageManager(
     }
 
     fun getDownloadsDirectory(): UniFile? {
-        return baseDir?.createDirectory(DOWNLOADS_PATH)
+        val base = baseDir ?: return null
+        if (base.name.equals(DOWNLOADS_PATH, ignoreCase = true)) {
+            return base
+        }
+        return base.createDirectory(DOWNLOADS_PATH)
     }
 
     fun getLocalSourceDirectory(): UniFile? {

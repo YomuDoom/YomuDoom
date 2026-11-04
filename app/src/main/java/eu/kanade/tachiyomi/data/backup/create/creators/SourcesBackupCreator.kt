@@ -26,4 +26,5 @@ private fun Source.toBackupSource() =
     BackupSource(
         name = this.name,
         sourceId = this.id,
+        lang = this.lang,
     )
