@@ -118,7 +118,10 @@ class DownloadCache(
                         }
                         rootDownloadsDir = diskCache
                         val downloadsDir = storageManager.getDownloadsDirectory()
-                        val hasPhysicalDirs = downloadsDir?.listFiles().orEmpty().any { it.isDirectory && !it.name.isNullOrBlank() }
+                        val hasPhysicalDirs = downloadsDir?.listFiles().orEmpty().any {
+                            it.isDirectory &&
+                                !it.name.isNullOrBlank()
+                        }
                         if (diskCache.sourceDirs.isEmpty() && hasPhysicalDirs) {
                             lastRenew = 0L
                         } else {
