@@ -31,6 +31,7 @@ data class AvailableCover(
     val description: String,
     val source: String,
     val data: Any = url,
+    val altTitles: List<String> = emptyList(),
 )
 
 object OnlineCoverFetcher {
@@ -145,7 +146,26 @@ object OnlineCoverFetcher {
         if (cleanTitle.contains(" - ")) queries.add(cleanTitle.substringBefore(" - ").trim())
         if (cleanTitle.contains(":")) queries.add(cleanTitle.substringBefore(":").trim())
         if (cleanTitle.contains("/")) queries.add(cleanTitle.substringBefore("/").trim())
-        return queries.distinct()
+
+        for (prefix in listOf("O ", "A ", "Os ", "As ", "The ", "o ", "a ", "the ")) {
+            if (cleanTitle.startsWith(prefix, ignoreCase = true) && cleanTitle.length > prefix.length) {
+                queries.add(cleanTitle.substring(prefix.length).trim())
+            }
+        }
+
+        val words = cleanTitle.split(" ").filter { it.isNotBlank() }
+        if (words.size > 3) {
+            val stopWords = setOf(
+                "o", "a", "os", "as", "de", "do", "da", "dos", "das", "em", "no", "na",
+                "e", "que", "não", "nao", "the", "of", "in", "to",
+            )
+            val significant = words.filter { it.lowercase() !in stopWords }
+            if (significant.size >= 2) {
+                queries.add(significant.take(2).joinToString(" "))
+            }
+        }
+
+        return queries.filter { it.length >= 3 }.distinct()
     }
 
     suspend fun getAvailableCovers(
@@ -155,34 +175,7 @@ object OnlineCoverFetcher {
     ): List<AvailableCover> = withContext(Dispatchers.IO) {
         val results = mutableListOf<AvailableCover>()
 
-        val queries = generateTitleQueries(title)
-        if (queries.isNotEmpty()) {
-            coroutineScope {
-                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
-                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
-                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
-
-                val fetched = mutableListOf<AvailableCover>()
-                fetched.addAll(anilistDeferred.await())
-                fetched.addAll(kitsuDeferred.await())
-                fetched.addAll(mangaDexDeferred.await())
-                results.addAll(
-                    fetched.sortedWith(
-                        compareByDescending<AvailableCover> { scoreTitleMatch(title, it.description) }
-                            .thenByDescending {
-                                when (it.source) {
-                                    "AniList" -> 3
-                                    "Kitsu" -> 2
-                                    "MangaDex" -> 1
-                                    else -> 0
-                                }
-                            },
-                    ),
-                )
-            }
-        }
-
-        // Capa original registrada como opção complementar
+        // Capa original registrada como opção preferencial/complementar
         if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
             results.add(
                 AvailableCover(
@@ -192,6 +185,36 @@ object OnlineCoverFetcher {
                     data = mangaData ?: existingUrl,
                 ),
             )
+        }
+
+        val queries = generateTitleQueries(title)
+        if (queries.isNotEmpty()) {
+            coroutineScope {
+                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
+                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+
+                val fetched = mutableListOf<AvailableCover>()
+                fetched.addAll(anilistDeferred.await())
+                fetched.addAll(mangaDexDeferred.await())
+                fetched.addAll(kitsuDeferred.await())
+                results.addAll(
+                    fetched.map { it to scoreCoverMatch(title, it) }
+                        .filter { it.second >= 40 }
+                        .sortedWith(
+                            compareByDescending<Pair<AvailableCover, Int>> { it.second }
+                                .thenByDescending { (cover, _) ->
+                                    when (cover.source) {
+                                        "AniList" -> 3
+                                        "MangaDex" -> 2
+                                        "Kitsu" -> 1
+                                        else -> 0
+                                    }
+                                },
+                        )
+                        .map { it.first },
+                )
+            }
         }
 
         results.distinctBy { it.url }
@@ -210,7 +233,9 @@ object OnlineCoverFetcher {
                   title {
                     english
                     romaji
+                    native
                   }
+                  synonyms
                   coverImage {
                     extraLarge
                     large
@@ -253,6 +278,11 @@ object OnlineCoverFetcher {
                         val titleObj = mObj["title"]?.jsonObject
                         val englishTitle = titleObj?.get("english")?.jsonPrimitive?.contentOrNull
                         val romajiTitle = titleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+                        val nativeTitle = titleObj?.get("native")?.jsonPrimitive?.contentOrNull
+                        val synonyms = mObj["synonyms"]?.jsonArray.orEmpty().mapNotNull {
+                            it.jsonPrimitive.contentOrNull
+                        }
+                        val allAlts = (synonyms + listOfNotNull(englishTitle, romajiTitle, nativeTitle)).distinct()
                         val coverObj = mObj["coverImage"]?.jsonObject
                         val imgUrl = coverObj?.get("extraLarge")?.jsonPrimitive?.contentOrNull
                             ?: coverObj?.get("large")?.jsonPrimitive?.contentOrNull
@@ -265,6 +295,7 @@ object OnlineCoverFetcher {
                                     description = desc,
                                     source = "AniList",
                                     data = imgUrl,
+                                    altTitles = allAlts,
                                 ),
                             )
                         }
@@ -363,6 +394,9 @@ object OnlineCoverFetcher {
                         val attr = mangaObj["attributes"]?.jsonObject
                         val titleMap = attr?.get("title")?.jsonObject
                         val mangaTitle = titleMap?.values?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: "Capa oficial"
+                        val altTitlesList = attr?.get("altTitles")?.jsonArray.orEmpty().mapNotNull { altObj ->
+                            altObj.jsonObject.values.firstOrNull()?.jsonPrimitive?.contentOrNull
+                        }
 
                         val rels = mangaObj["relationships"]?.jsonArray.orEmpty()
                         var coverFile: String? = null
@@ -383,6 +417,7 @@ object OnlineCoverFetcher {
                                     description = mangaTitle,
                                     source = "MangaDex",
                                     data = imgUrl,
+                                    altTitles = altTitlesList,
                                 ),
                             )
                         }
@@ -400,43 +435,47 @@ object OnlineCoverFetcher {
     suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
         Dispatchers.IO,
     ) {
-        val queries = generateTitleQueries(title)
-        val onlineCovers = mutableListOf<AvailableCover>()
-        if (queries.isNotEmpty()) {
-            coroutineScope {
-                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
-                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
-                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
-
-                onlineCovers.addAll(anilistDeferred.await())
-                onlineCovers.addAll(kitsuDeferred.await())
-                onlineCovers.addAll(mangaDexDeferred.await())
-            }
-        }
-
-        // Tenta primeiro obter capa dos provedores oficiais online (AniList, Kitsu, MangaDex)
-        val sortedCovers = onlineCovers.distinctBy { it.url }
-            .sortedWith(
-                compareByDescending<AvailableCover> { scoreTitleMatch(title, it.description) }
-                    .thenByDescending {
-                        when (it.source) {
-                            "AniList" -> 3
-                            "Kitsu" -> 2
-                            "MangaDex" -> 1
-                            else -> 0
-                        }
-                    },
-            )
-        for (cover in sortedCovers) {
-            val stream = fetchStreamFromUrl(cover.url)
+        // 1. SEMPRE TENTA A URL ORIGINAL DA FONTE PRIMEIRO!
+        if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
+            val stream = fetchStreamFromUrl(existingUrl)
             if (stream != null) {
                 return@withContext stream
             }
         }
 
-        // Se nenhum provedor online retornou, tenta a URL existente (se for imagem válida)
-        if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
-            val stream = fetchStreamFromUrl(existingUrl)
+        // 2. Se a URL original falhou (404, link morto, placeholder anti-hotlink descartado):
+        val queries = generateTitleQueries(title)
+        val onlineCovers = mutableListOf<AvailableCover>()
+        if (queries.isNotEmpty()) {
+            coroutineScope {
+                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
+                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+
+                onlineCovers.addAll(anilistDeferred.await())
+                onlineCovers.addAll(mangaDexDeferred.await())
+                onlineCovers.addAll(kitsuDeferred.await())
+            }
+        }
+
+        // EXIGE STRICT MATCH: score >= 60! NUNCA aceita obra aleatória.
+        val validCovers = onlineCovers.distinctBy { it.url }
+            .map { it to scoreCoverMatch(title, it) }
+            .filter { it.second >= 60 }
+            .sortedWith(
+                compareByDescending<Pair<AvailableCover, Int>> { it.second }
+                    .thenByDescending { (cover, _) ->
+                        when (cover.source) {
+                            "AniList" -> 3
+                            "MangaDex" -> 2
+                            "Kitsu" -> 1
+                            else -> 0
+                        }
+                    },
+            )
+
+        for ((cover, _) in validCovers) {
+            val stream = fetchStreamFromUrl(cover.url)
             if (stream != null) {
                 return@withContext stream
             }
@@ -445,16 +484,26 @@ object OnlineCoverFetcher {
         null
     }
 
-    private fun scoreTitleMatch(query: String, candidate: String): Int {
+    fun scoreCoverMatch(query: String, cover: AvailableCover): Int {
+        val mainScore = scoreTitleMatch(query, cover.description)
+        val altScore = cover.altTitles.maxOfOrNull { scoreTitleMatch(query, it) } ?: 0
+        return maxOf(mainScore, altScore)
+    }
+
+    fun scoreTitleMatch(query: String, candidate: String): Int {
         val q = query.trim().lowercase().replace("[^a-z0-9]".toRegex(), "")
         val c = candidate.trim().lowercase().replace("[^a-z0-9]".toRegex(), "")
+        if (q.isBlank() || c.isBlank()) return 0
         return when {
             q == c -> 100
             c.startsWith(q) && !c.contains("side") && !c.contains("relax") && !c.contains("spinoff") &&
-                !c.contains("spin-off") -> 80
-            c.startsWith(q) -> 50
-            c.contains(q) -> 40
-            else -> 10
+                !c.contains("spin-off") -> 85
+            q.startsWith(c) && !q.contains("side") && !q.contains("relax") -> 85
+            c.startsWith(q) -> 65
+            q.startsWith(c) -> 60
+            c.contains(q) && q.length >= 6 -> 55
+            q.contains(c) && c.length >= 6 -> 50
+            else -> 0
         }
     }
 }

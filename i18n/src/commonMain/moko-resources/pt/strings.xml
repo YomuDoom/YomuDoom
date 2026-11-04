@@ -956,4 +956,7 @@
     <string name="available_covers_dialog_subtitle">Selecione uma imagem para definir como capa</string>
     <string name="available_covers_fetching">A procurar capas disponíveis…</string>
     <string name="available_covers_empty">Nenhuma capa encontrada para esta obra.</string>
+    <string name="action_restore_source_covers">Restaurar capas originais</string>
+    <string name="restoring_source_covers">A restaurar capas originais das fontes…</string>
+    <string name="restored_source_covers_count">%d capas restauradas para as originais da fonte</string>
 </resources>

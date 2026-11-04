@@ -37,6 +37,7 @@ fun LibraryToolbar(
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
     onClickFixMissingCovers: () -> Unit,
+    onClickRestoreSourceCovers: () -> Unit,
     onClickPreviewUpdate: (() -> Unit)?,
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
@@ -58,6 +59,7 @@ fun LibraryToolbar(
         onClickGlobalUpdate = onClickGlobalUpdate,
         onClickOpenRandomManga = onClickOpenRandomManga,
         onClickFixMissingCovers = onClickFixMissingCovers,
+        onClickRestoreSourceCovers = onClickRestoreSourceCovers,
         onClickPreviewUpdate = onClickPreviewUpdate,
         scrollBehavior = scrollBehavior,
     )
@@ -74,6 +76,7 @@ private fun LibraryRegularToolbar(
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
     onClickFixMissingCovers: () -> Unit,
+    onClickRestoreSourceCovers: () -> Unit,
     onClickPreviewUpdate: (() -> Unit)?,
     scrollBehavior: TopAppBarScrollBehavior?,
 ) {
@@ -129,6 +132,10 @@ private fun LibraryRegularToolbar(
                     AppBar.OverflowAction(
                         title = stringResource(MR.strings.action_recover_missing_covers),
                         onClick = onClickFixMissingCovers,
+                    ),
+                    AppBar.OverflowAction(
+                        title = stringResource(MR.strings.action_restore_source_covers),
+                        onClick = onClickRestoreSourceCovers,
                     ),
                 ),
             )

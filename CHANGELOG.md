@@ -1,5 +1,21 @@
 # YomuDoom Changelog
 
+## 0.21.10
+
+### Português (Brasil)
+
+- Adiciona a ação "Restaurar capas originais" no menu da Biblioteca para redefinir instantaneamente as capas das obras para as artes originais das fontes instaladas.
+- Garante prioridade absoluta para a capa original da fonte do mangá em "Recuperar capas ausentes", impedindo que buscas online sobrescrevam capas existentes.
+- Exige compatibilidade estrita de título (score >= 60) e suporte a títulos alternativos para capas online, eliminando atribuições de obras aleatórias (como O Soldado Esqueleto recebendo The Beginning After the End).
+- Remove o Kitsu como provedor primário de buscas automáticas por retornar mangás arbitrários para títulos em português.
+
+### English
+
+- Adds "Restore original covers" action in Library menu to instantly reset covers back to their original source artwork.
+- Guarantees top priority for the manga's original source cover during "Recover missing covers", preventing online searches from overwriting valid source covers.
+- Requires strict title matching (score >= 60) including alternative titles, preventing completely unrelated manga covers from being assigned.
+- Demotes Kitsu in automated recovery to prevent arbitrary replacements on localized titles.
+
 ## 0.21.9
 
 ### Português (Brasil)

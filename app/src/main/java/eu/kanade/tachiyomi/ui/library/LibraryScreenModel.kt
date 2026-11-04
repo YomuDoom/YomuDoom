@@ -845,6 +845,33 @@ class LibraryScreenModel(
         }
     }
 
+    fun restoreSourceCovers(
+        context: Context,
+        onShowSnackbar: (String) -> Unit,
+    ) {
+        recoveryScope.launch {
+            try {
+                onShowSnackbar(context.stringResource(MR.strings.restoring_source_covers))
+                val allManga = getLibraryManga.await().map { it.manga }
+                var resetCount = 0
+                for (manga in allManga) {
+                    val customCoverFile = coverCache.getCustomCoverFile(manga.id)
+                    if (customCoverFile.exists()) {
+                        customCoverFile.delete()
+                        coverCache.deleteCustomCover(manga.id)
+                        updateManga.awaitUpdateCoverLastModified(manga.id)
+                        resetCount++
+                    }
+                }
+                val resultMsg = context.stringResource(MR.strings.restored_source_covers_count, resetCount)
+                onShowSnackbar(resultMsg)
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                onShowSnackbar(e.message ?: "Error")
+            }
+        }
+    }
+
     fun closeDialog() {
         mutableState.update { it.copy(dialog = null) }
     }

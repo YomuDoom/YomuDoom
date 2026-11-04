@@ -1146,4 +1146,7 @@
     <string name="available_covers_dialog_subtitle">Select an image to set as the cover</string>
     <string name="available_covers_fetching">Searching available covers…</string>
     <string name="available_covers_empty">No available covers found for this title.</string>
+    <string name="action_restore_source_covers">Restore original covers</string>
+    <string name="restoring_source_covers">Restoring original source covers…</string>
+    <string name="restored_source_covers_count">%d covers restored to original source covers</string>
 </resources>

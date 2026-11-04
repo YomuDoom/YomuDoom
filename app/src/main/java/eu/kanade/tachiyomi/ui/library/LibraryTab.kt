@@ -165,6 +165,19 @@ data object LibraryTab : Tab {
                             },
                         )
                     },
+                    onClickRestoreSourceCovers = {
+                        screenModel.restoreSourceCovers(
+                            context = context,
+                            onShowSnackbar = { message ->
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = message,
+                                        withDismissAction = true,
+                                    )
+                                }
+                            },
+                        )
+                    },
                     onClickPreviewUpdate = if (isDebugBuildType) {
                         {
                             navigator.push(
