@@ -1149,4 +1149,7 @@
     <string name="action_restore_source_covers">Restore original covers</string>
     <string name="restoring_source_covers">Restoring original source covers…</string>
     <string name="restored_source_covers_count">%d covers restored to original source covers</string>
+    <string name="cover_recovery_results_title">Updated covers</string>
+    <string name="cover_recovery_updated_count">%d covers updated successfully</string>
+    <string name="cover_recovery_no_updates">No covers were updated.</string>
 </resources>

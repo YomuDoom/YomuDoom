@@ -86,6 +86,7 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.deeplink.DeepLinkScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.library.CoverRecoveryResultScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
@@ -506,6 +507,14 @@ class MainActivity : BaseActivity() {
             Constants.SHORTCUT_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
+            }
+            Constants.SHORTCUT_COVER_RECOVERY_RESULT -> {
+                val titles =
+                    intent.getStringArrayListExtra(Constants.EXTRA_COVER_RECOVERY_TITLES)?.toList() ?: emptyList()
+                val ids = intent.getLongArrayExtra(Constants.EXTRA_COVER_RECOVERY_IDS)?.toList() ?: emptyList()
+                navigator.popUntilRoot()
+                navigator.push(CoverRecoveryResultScreen(titles = titles, ids = ids))
+                null
             }
             Intent.ACTION_APPLICATION_PREFERENCES -> {
                 navigator.popUntilRoot()

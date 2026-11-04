@@ -1,5 +1,17 @@
 # YomuDoom Changelog
 
+## 0.21.11
+
+### Português (Brasil)
+
+- Ao clicar na notificação de conclusão da recuperação de capas ausentes, o app agora abre a tela "Capas atualizadas" exibindo o nome e a capa de todas as obras atualizadas (com toque para abrir os detalhes da obra).
+- A notificação de conclusão expandida agora exibe a lista dos títulos atualizados diretamente na gaveta de notificações do Android.
+
+### English
+
+- Tapping the missing covers recovery completion notification now opens the "Updated covers" screen showing the title and cover of all updated entries (with tap to open manga details).
+- The expanded completion notification now shows the list of updated titles directly in Android's notification shade.
+
 ## 0.21.10
 
 ### Português (Brasil)

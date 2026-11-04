@@ -623,6 +623,28 @@ class NotificationReceiver : BroadcastReceiver() {
         }
 
         /**
+         * Returns [PendingIntent] that opens MainActivity and shows the cover recovery results screen.
+         */
+        internal fun openCoverRecoveryResultPendingActivity(
+            context: Context,
+            titles: List<String>,
+            ids: List<Long>,
+        ): PendingIntent {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = Constants.SHORTCUT_COVER_RECOVERY_RESULT
+                putStringArrayListExtra(Constants.EXTRA_COVER_RECOVERY_TITLES, ArrayList(titles))
+                putExtra(Constants.EXTRA_COVER_RECOVERY_IDS, ids.toLongArray())
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            return PendingIntent.getActivity(
+                context,
+                Notifications.ID_COVER_RECOVERY_PROGRESS,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        /**
          * Returns [PendingIntent] that cancels a backup restore job.
          *
          * @param context context of application

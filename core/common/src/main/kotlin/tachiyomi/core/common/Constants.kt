@@ -18,4 +18,8 @@ object Constants {
     const val SHORTCUT_SOURCES = "eu.kanade.tachiyomi.SHOW_CATALOGUES"
     const val SHORTCUT_EXTENSIONS = "eu.kanade.tachiyomi.EXTENSIONS"
     const val SHORTCUT_DOWNLOADS = "eu.kanade.tachiyomi.SHOW_DOWNLOADS"
+    const val SHORTCUT_COVER_RECOVERY_RESULT = "eu.kanade.tachiyomi.COVER_RECOVERY_RESULT"
+
+    const val EXTRA_COVER_RECOVERY_TITLES = "cover_recovery_titles"
+    const val EXTRA_COVER_RECOVERY_IDS = "cover_recovery_ids"
 }

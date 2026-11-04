@@ -1006,4 +1006,7 @@
     <string name="action_restore_source_covers">Restaurar capas originais</string>
     <string name="restoring_source_covers">Restaurando capas originais das fontes…</string>
     <string name="restored_source_covers_count">%d capas restauradas para as originais da fonte</string>
+    <string name="cover_recovery_results_title">Capas atualizadas</string>
+    <string name="cover_recovery_updated_count">%d capas atualizadas com sucesso</string>
+    <string name="cover_recovery_no_updates">Nenhuma capa precisou ser atualizada.</string>
 </resources>

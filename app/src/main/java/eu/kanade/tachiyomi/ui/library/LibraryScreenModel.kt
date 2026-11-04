@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
+import androidx.core.app.NotificationCompat
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.PreferenceMutableState
@@ -20,6 +21,7 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
+import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
@@ -791,6 +793,7 @@ class LibraryScreenModel(
                 context.notify(Notifications.ID_COVER_RECOVERY_PROGRESS, notifBuilder.build())
 
                 var successCount = 0
+                val updatedManga = mutableListOf<tachiyomi.domain.manga.model.Manga>()
                 for ((index, manga) in missingCovers.withIndex()) {
                     try {
                         notifBuilder.apply {
@@ -811,11 +814,15 @@ class LibraryScreenModel(
                                 manga.editCover(Injekt.get(), it, updateManga, coverCache)
                             }
                             successCount++
+                            updatedManga.add(manga)
                         }
                     } catch (e: Exception) {
                         logcat(LogPriority.WARN, e)
                     }
                 }
+
+                CoverRecoveryHolder.lastRecoveredManga = updatedManga
+                CoverRecoveryHolder.lastRecoveredTitles = updatedManga.map { it.title }
 
                 val resultMessage = context.stringResource(
                     MR.strings.cover_check_mass_result,
@@ -823,6 +830,13 @@ class LibraryScreenModel(
                     total,
                 )
                 context.cancelNotification(Notifications.ID_COVER_RECOVERY_PROGRESS)
+
+                val pendingIntent = NotificationReceiver.openCoverRecoveryResultPendingActivity(
+                    context,
+                    updatedManga.map { it.title },
+                    updatedManga.map { it.id },
+                )
+
                 context.notify(
                     Notifications.ID_COVER_RECOVERY_PROGRESS,
                     context.notificationBuilder(Notifications.CHANNEL_LIBRARY_PROGRESS) {
@@ -832,6 +846,24 @@ class LibraryScreenModel(
                         setProgress(0, 0, false)
                         setAutoCancel(true)
                         setOngoing(false)
+                        setContentIntent(pendingIntent)
+                        if (updatedManga.isNotEmpty()) {
+                            setStyle(
+                                NotificationCompat.BigTextStyle().bigText(
+                                    buildString {
+                                        append(resultMessage)
+                                        append("\n")
+                                        updatedManga.take(15).forEach {
+                                            append("\n• ")
+                                            append(it.title)
+                                        }
+                                        if (updatedManga.size > 15) {
+                                            append("\n• +${updatedManga.size - 15} ...")
+                                        }
+                                    },
+                                ),
+                            )
+                        }
                     }.build(),
                 )
                 onShowSnackbar(resultMessage)
