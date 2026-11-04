@@ -101,7 +101,7 @@ class CoverRecoveryResultScreen(
         ) { contentPadding ->
             if (isLoaded && totalCount == 0) {
                 EmptyScreen(
-                    text = stringResource(MR.strings.cover_recovery_no_updates),
+                    stringRes = MR.strings.cover_recovery_no_updates,
                     modifier = Modifier.padding(contentPadding),
                 )
             } else {
