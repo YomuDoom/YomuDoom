@@ -146,11 +146,11 @@ class MangaCoverScreenModel(
     }
 
     fun fetchOnlineCover(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
-        val manga = state.value ?: run {
-            onComplete?.invoke(false)
-            return
-        }
         screenModelScope.launchIO {
+            val manga = state.value ?: getManga.await(mangaId) ?: run {
+                withUIContext { onComplete?.invoke(false) }
+                return@launchIO
+            }
             try {
                 val stream = OnlineCoverFetcher.fetchCoverStream(manga.title, manga.thumbnailUrl)
                 if (stream != null) {
@@ -184,11 +184,11 @@ class MangaCoverScreenModel(
     }
 
     fun setCustomCoverFromUrl(context: Context, url: String, onComplete: ((Boolean) -> Unit)? = null) {
-        val manga = state.value ?: run {
-            onComplete?.invoke(false)
-            return
-        }
         screenModelScope.launchIO {
+            val manga = state.value ?: getManga.await(mangaId) ?: run {
+                withUIContext { onComplete?.invoke(false) }
+                return@launchIO
+            }
             try {
                 val stream = OnlineCoverFetcher.fetchStreamFromUrl(url)
                 if (stream != null) {

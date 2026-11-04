@@ -35,6 +35,24 @@ object OnlineCoverFetcher {
     private val json = Json { ignoreUnknownKeys = true }
     private const val USER_AGENT = "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)"
 
+    fun isImage(bytes: ByteArray): Boolean {
+        if (bytes.size < 4) return false
+        // JPEG: FF D8 FF
+        if (bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte()) return true
+        // PNG: 89 50 4E 47
+        if (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()) return true
+        // GIF: 47 49 46
+        if (bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte()) return true
+        // WEBP: RIFF....WEBP
+        if (bytes.size >= 12 &&
+            bytes[0] == 0x52.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte() && bytes[3] == 0x46.toByte() &&
+            bytes[8] == 0x57.toByte() && bytes[9] == 0x45.toByte() && bytes[10] == 0x42.toByte() && bytes[11] == 0x50.toByte()
+        ) return true
+        // BMP: 42 4D
+        if (bytes[0] == 0x42.toByte() && bytes[1] == 0x4D.toByte()) return true
+        return false
+    }
+
     suspend fun fetchStreamFromUrl(url: String): InputStream? = withContext(Dispatchers.IO) {
         val networkHelper: NetworkHelper = Injekt.get()
         val client = networkHelper.client
@@ -48,7 +66,7 @@ object OnlineCoverFetcher {
                 val body = resp.body
                 if (body != null) {
                     val bytes = body.bytes()
-                    if (bytes.isNotEmpty()) {
+                    if (isImage(bytes)) {
                         ByteArrayInputStream(bytes)
                     } else {
                         null
@@ -85,29 +103,31 @@ object OnlineCoverFetcher {
     ): List<AvailableCover> = withContext(Dispatchers.IO) {
         val results = mutableListOf<AvailableCover>()
 
-        // 1. Capa original registrada, se houver
+        val queries = generateTitleQueries(title)
+        if (queries.isNotEmpty()) {
+            coroutineScope {
+                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
+                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+
+                val fetched = mutableListOf<AvailableCover>()
+                fetched.addAll(anilistDeferred.await())
+                fetched.addAll(kitsuDeferred.await())
+                fetched.addAll(mangaDexDeferred.await())
+                results.addAll(fetched.sortedByDescending { scoreTitleMatch(title, it.description) })
+            }
+        }
+
+        // Capa original registrada como opção complementar
         if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
             results.add(
                 AvailableCover(
                     url = existingUrl,
-                    description = "Capa original",
+                    description = "Capa original da fonte",
                     source = "Fonte",
                     data = mangaData ?: existingUrl,
                 ),
             )
-        }
-
-        val queries = generateTitleQueries(title)
-        if (queries.isEmpty()) return@withContext results
-
-        coroutineScope {
-            val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
-            val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
-            val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
-
-            results.addAll(anilistDeferred.await())
-            results.addAll(kitsuDeferred.await())
-            results.addAll(mangaDexDeferred.await())
         }
 
         results.distinctBy { it.url }
@@ -120,7 +140,7 @@ object OnlineCoverFetcher {
 
         val graphQuery = """
             query (${'$'}search: String) {
-              Page(page: 1, perPage: 3) {
+              Page(page: 1, perPage: 6) {
                 media(search: ${'$'}search, type: MANGA) {
                   id
                   title {
@@ -204,7 +224,7 @@ object OnlineCoverFetcher {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
-                val url = "https://kitsu.io/api/edge/manga?filter%5Btext%5D=$encoded&page%5Blimit%5D=3"
+                val url = "https://kitsu.io/api/edge/manga?filter%5Btext%5D=$encoded&page%5Blimit%5D=5"
                 val req = Request.Builder()
                     .url(url)
                     .header("User-Agent", USER_AGENT)
@@ -261,7 +281,7 @@ object OnlineCoverFetcher {
             if (query.isBlank()) continue
             try {
                 val encoded = URLEncoder.encode(query, "UTF-8")
-                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=3&includes[]=cover_art" +
+                val searchUrl = "https://api.mangadex.org/manga?title=$encoded&limit=5&includes[]=cover_art" +
                     "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic"
                 val searchReq = Request.Builder()
                     .url(searchUrl)
@@ -316,13 +336,50 @@ object OnlineCoverFetcher {
     suspend fun fetchCoverStream(title: String, existingUrl: String? = null): InputStream? = withContext(
         Dispatchers.IO,
     ) {
-        val available = getAvailableCovers(title, existingUrl)
-        for (cover in available) {
+        val queries = generateTitleQueries(title)
+        val onlineCovers = mutableListOf<AvailableCover>()
+        if (queries.isNotEmpty()) {
+            coroutineScope {
+                val anilistDeferred = async(Dispatchers.IO) { fetchAniListCovers(queries) }
+                val kitsuDeferred = async(Dispatchers.IO) { fetchKitsuCovers(queries) }
+                val mangaDexDeferred = async(Dispatchers.IO) { fetchMangaDexCovers(queries) }
+
+                onlineCovers.addAll(anilistDeferred.await())
+                onlineCovers.addAll(kitsuDeferred.await())
+                onlineCovers.addAll(mangaDexDeferred.await())
+            }
+        }
+
+        // Tenta primeiro obter capa dos provedores oficiais online (AniList, Kitsu, MangaDex)
+        val sortedCovers = onlineCovers.distinctBy { it.url }
+            .sortedByDescending { scoreTitleMatch(title, it.description) }
+        for (cover in sortedCovers) {
             val stream = fetchStreamFromUrl(cover.url)
             if (stream != null) {
                 return@withContext stream
             }
         }
+
+        // Se nenhum provedor online retornou, tenta a URL existente (se for imagem válida)
+        if (!existingUrl.isNullOrBlank() && (existingUrl.startsWith("http://") || existingUrl.startsWith("https://"))) {
+            val stream = fetchStreamFromUrl(existingUrl)
+            if (stream != null) {
+                return@withContext stream
+            }
+        }
+
         null
+    }
+
+    private fun scoreTitleMatch(query: String, candidate: String): Int {
+        val q = query.trim().lowercase().replace("[^a-z0-9]".toRegex(), "")
+        val c = candidate.trim().lowercase().replace("[^a-z0-9]".toRegex(), "")
+        return when {
+            q == c -> 100
+            c.startsWith(q) && !c.contains("side") && !c.contains("relax") && !c.contains("spinoff") && !c.contains("spin-off") -> 80
+            c.startsWith(q) -> 50
+            c.contains(q) -> 40
+            else -> 10
+        }
     }
 }

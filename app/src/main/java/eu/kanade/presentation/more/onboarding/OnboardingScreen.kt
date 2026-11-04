@@ -51,10 +51,11 @@ fun OnboardingScreen(
             )
         }
     }
-    val isLastStep = currentStep == steps.lastIndex
+    val safeStepIndex = currentStep.coerceIn(0, (steps.size - 1).coerceAtLeast(0))
+    val isLastStep = safeStepIndex == steps.lastIndex
 
-    BackHandler(enabled = currentStep != 0) {
-        currentStep--
+    BackHandler(enabled = currentStep > 0) {
+        currentStep = (currentStep - 1).coerceAtLeast(0)
     }
 
     InfoScreen(
@@ -68,12 +69,12 @@ fun OnboardingScreen(
                 MR.strings.onboarding_action_next
             },
         ),
-        canAccept = steps[currentStep].isComplete,
+        canAccept = steps.getOrNull(safeStepIndex)?.isComplete ?: true,
         onAcceptClick = {
             if (isLastStep) {
                 onComplete()
             } else {
-                currentStep++
+                currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
             }
         },
     ) {
@@ -85,7 +86,7 @@ fun OnboardingScreen(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
             AnimatedContent(
-                targetState = currentStep,
+                targetState = safeStepIndex,
                 transitionSpec = {
                     materialSharedAxisX(
                         forward = targetState > initialState,
@@ -93,8 +94,8 @@ fun OnboardingScreen(
                     )
                 },
                 label = "stepContent",
-            ) {
-                steps[it].Content()
+            ) { targetIndex ->
+                steps.getOrNull(targetIndex)?.Content()
             }
         }
     }

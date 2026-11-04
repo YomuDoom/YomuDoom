@@ -1,5 +1,23 @@
 # YomuDoom Changelog
 
+## 0.21.8
+
+### Português (Brasil)
+
+- Corrige encerramento inesperado (crash) no Guia Inicial ao clicar em "Restaurar backup" ou "Instalar fontes recomendadas".
+- Atualiza o nome de arquivos de relatórios e erros para o padrão YomuDoom (`yomudoom_crash_logs.txt`, `yomudoom_restore_error.txt`, `yomudoom_update_errors.txt`, `yomudoom_library.csv`).
+- Aprimora a recuperação de capas ausentes na biblioteca, descartando respostas corrompidas de erro/HTML e baixando as capas oficiais.
+- Otimiza o ranqueamento de capas online priorizando títulos idênticos sobre spin-offs ou obras secundárias (como Kaiju No. 8).
+- Restaura a experiência original e limpa de atualização do aplicativo via barra de notificações.
+
+### English
+
+- Fixes crash in Onboarding Guide when clicking "Restore backup" or "Install recommended sources".
+- Updates report and error log file names to YomuDoom branding (`yomudoom_crash_logs.txt`, `yomudoom_restore_error.txt`, `yomudoom_update_errors.txt`, `yomudoom_library.csv`).
+- Improves library missing cover recovery by cleaning up corrupted/HTML error files from cache and downloading official posters.
+- Optimizes online cover search ranking to prioritize exact title matches over spin-offs (such as Kaiju No. 8).
+- Restores clean in-app update experience with status bar notification downloads.
+
 ## 0.21.7
 
 ### Português (Brasil)

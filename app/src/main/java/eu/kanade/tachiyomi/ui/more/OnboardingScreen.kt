@@ -41,8 +41,10 @@ class OnboardingScreen : Screen() {
             // Prevent exiting if onboarding hasn't been completed
         }
 
+        val showAgeConfirmation = remember { !shownOnboardingFlow }
+
         OnboardingScreen(
-            showAgeConfirmation = !shownOnboardingFlow,
+            showAgeConfirmation = showAgeConfirmation,
             onComplete = finishOnboarding,
             onRestoreBackup = {
                 finishOnboarding()

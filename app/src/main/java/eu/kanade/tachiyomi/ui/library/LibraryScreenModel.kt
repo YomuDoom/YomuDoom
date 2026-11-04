@@ -766,10 +766,10 @@ class LibraryScreenModel(
             try {
                 val allManga = getLibraryManga.await().map { it.manga }
                 val missingCovers = allManga.filter { manga ->
-                    val customCoverExists = coverCache.getCustomCoverFile(manga.id).exists()
+                    val customCoverValid = coverCache.isCoverValid(coverCache.getCustomCoverFile(manga.id))
                     val standardCoverValid = !manga.thumbnailUrl.isNullOrBlank() &&
-                        coverCache.getCoverFile(manga.thumbnailUrl)?.let { it.exists() && it.length() > 0 } == true
-                    !customCoverExists && !standardCoverValid
+                        coverCache.isCoverValid(coverCache.getCoverFile(manga.thumbnailUrl))
+                    !customCoverValid && !standardCoverValid
                 }
 
                 if (missingCovers.isEmpty()) {

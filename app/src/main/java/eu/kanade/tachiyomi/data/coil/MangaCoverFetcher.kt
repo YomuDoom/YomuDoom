@@ -57,6 +57,8 @@ class MangaCoverFetcher(
     private val imageLoader: ImageLoader,
 ) : Fetcher {
 
+    private val coverCache: CoverCache by injectLazy()
+
     private val diskCacheKey: String
         get() = diskCacheKeyLazy.value
 
@@ -65,7 +67,7 @@ class MangaCoverFetcher(
         val useCustomCover = options.extras.getOrDefault(USE_CUSTOM_COVER_KEY)
         if (useCustomCover) {
             val customCoverFile = customCoverFileLazy.value
-            if (customCoverFile.exists()) {
+            if (customCoverFile.exists() && coverCache.isCoverValid(customCoverFile)) {
                 return fileLoader(customCoverFile)
             }
         }
@@ -112,7 +114,9 @@ class MangaCoverFetcher(
             null
         }
         if (libraryCoverCacheFile?.exists() == true && options.diskCachePolicy.readEnabled) {
-            return fileLoader(libraryCoverCacheFile)
+            if (coverCache.isCoverValid(libraryCoverCacheFile)) {
+                return fileLoader(libraryCoverCacheFile)
+            }
         }
 
         var snapshot = readFromDiskCache()
@@ -224,6 +228,9 @@ class MangaCoverFetcher(
         return try {
             response.peekBody(Long.MAX_VALUE).source().use { input ->
                 writeSourceToCoverCache(input, cacheFile)
+            }
+            if (cacheFile.exists() && !coverCache.isCoverValid(cacheFile)) {
+                return null
             }
             cacheFile.takeIf { it.exists() }
         } catch (e: Exception) {
