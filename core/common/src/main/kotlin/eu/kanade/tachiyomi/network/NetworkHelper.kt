@@ -31,6 +31,18 @@ class NetworkHelper(
             )
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val host = request.url.host
+                if (host.contains("mangadex.org") && request.header("Referer") == null) {
+                    val newRequest = request.newBuilder()
+                        .header("Referer", "https://mangadex.org/")
+                        .build()
+                    chain.proceed(newRequest)
+                } else {
+                    chain.proceed(request)
+                }
+            }
 
         if (preferences.verboseLogging.get()) {
             val httpLoggingInterceptor = HttpLoggingInterceptor().apply {

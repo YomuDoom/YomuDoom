@@ -1,5 +1,25 @@
 # YomuDoom Changelog
 
+## 0.21.9
+
+### Português (Brasil)
+
+- Bloqueia e descarta o banner de aviso anti-hotlink do MangaDex ("You can read this at MangaDex") em toda a aplicação.
+- Adiciona envio automático do cabeçalho `Referer: https://mangadex.org/` em todas as requisições de imagens do MangaDex para carregar as capas oficiais reais em vez do placeholder.
+- Expande a detecção de capas corrompidas no cache para expurgar automaticamente qualquer imagem que seja o banner do MangaDex.
+- "Recuperar capas ausentes" agora detecta obras com essa capa indevida e as substitui imediatamente pelas artes oficiais limpas do AniList e Kitsu.
+- Prioriza pôsteres oficiais do AniList e Kitsu antes de fontes secundárias.
+- Fecha imediatamente o diálogo de notas de atualização ao clicar em baixar, mantendo o progresso unicamente na barra de notificações sem flickers.
+
+### English
+
+- Completely filters out and discards the MangaDex anti-hotlink placeholder banner ("You can read this at MangaDex").
+- Automatically injects `Referer: https://mangadex.org/` header across all MangaDex image requests to load real covers instead of placeholder banners.
+- Extends cover cache validation to purge any cached MangaDex placeholder banners.
+- "Recover missing covers" now detects entries with placeholder images and replaces them with pristine official posters from AniList and Kitsu.
+- Prioritizes official AniList and Kitsu posters over secondary sources.
+- Immediately closes the update patch notes dialog upon clicking download, showing progress only in the notification bar without flickering.
+
 ## 0.21.8
 
 ### Português (Brasil)

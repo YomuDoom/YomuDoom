@@ -123,18 +123,25 @@ class MangaCoverFetcher(
         try {
             // Fetch from disk cache
             if (snapshot != null) {
-                val snapshotCoverCache = moveSnapshotToCoverCache(snapshot, libraryCoverCacheFile)
-                if (snapshotCoverCache != null) {
-                    // Read from cover cache after added to library
-                    return fileLoader(snapshotCoverCache)
-                }
+                val snapshotFile = snapshot.data.toFile()
+                if (!coverCache.isCoverValid(snapshotFile)) {
+                    imageLoader.diskCache?.remove(diskCacheKey)
+                    snapshot.close()
+                    snapshot = null
+                } else {
+                    val snapshotCoverCache = moveSnapshotToCoverCache(snapshot, libraryCoverCacheFile)
+                    if (snapshotCoverCache != null) {
+                        // Read from cover cache after added to library
+                        return fileLoader(snapshotCoverCache)
+                    }
 
-                // Read from snapshot
-                return SourceFetchResult(
-                    source = snapshot.toImageSource(),
-                    mimeType = "image/*",
-                    dataSource = DataSource.DISK,
-                )
+                    // Read from snapshot
+                    return SourceFetchResult(
+                        source = snapshot.toImageSource(),
+                        mimeType = "image/*",
+                        dataSource = DataSource.DISK,
+                    )
+                }
             }
 
             // Fetch from network
@@ -191,6 +198,9 @@ class MangaCoverFetcher(
             if (sourceHeaders != null) {
                 headers(sourceHeaders)
             }
+            if (url.contains("mangadex.org") && (sourceHeaders == null || sourceHeaders["Referer"] == null)) {
+                header("Referer", "https://mangadex.org/")
+            }
         }
 
         when {
@@ -215,6 +225,9 @@ class MangaCoverFetcher(
                     writeSourceToCoverCache(input, cacheFile)
                 }
                 remove(diskCacheKey)
+            }
+            if (cacheFile.exists() && !coverCache.isCoverValid(cacheFile)) {
+                return null
             }
             cacheFile.takeIf { it.exists() }
         } catch (e: Exception) {

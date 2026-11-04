@@ -31,16 +31,21 @@ class CoverCache(private val context: Context) {
     private val customCoverCacheDir = getCacheDir(CUSTOM_COVERS_DIR)
 
     /**
-     * Checks if a cover file exists and is a valid image (not an HTML error/challenge page or empty file).
+     * Checks if a cover file exists and is a valid image (not an HTML error/challenge page,
+     * empty file, or anti-hotlink placeholder banner).
      * If the file exists but is invalid, it is automatically removed to clean the corrupted cache.
      */
     fun isCoverValid(file: File?): Boolean {
         if (file == null || !file.exists() || file.length() < 32) return false
         val isValid = try {
-            file.inputStream().use { stream ->
-                val header = ByteArray(32)
-                val read = stream.read(header)
-                read >= 12 && OnlineCoverFetcher.isImage(header)
+            if (OnlineCoverFetcher.isPlaceholder(file)) {
+                false
+            } else {
+                file.inputStream().use { stream ->
+                    val header = ByteArray(32)
+                    val read = stream.read(header)
+                    read >= 12 && OnlineCoverFetcher.isImage(header)
+                }
             }
         } catch (e: Exception) {
             false

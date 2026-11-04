@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.util
 
+import android.graphics.BitmapFactory
 import eu.kanade.tachiyomi.network.NetworkHelper
+import eu.kanade.tachiyomi.util.lang.Hash
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -20,6 +22,7 @@ import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.InputStream
 import java.net.URLEncoder
 
@@ -34,6 +37,49 @@ object OnlineCoverFetcher {
 
     private val json = Json { ignoreUnknownKeys = true }
     private const val USER_AGENT = "YomuDoom/1.0 (https://github.com/YomuDoom/YomuDoom)"
+    private const val MANGADEX_PLACEHOLDER_MD5 = "694855f70d4887848147c6debe9c96dc"
+
+    fun isPlaceholder(file: File): Boolean {
+        if (!file.exists()) return false
+        val len = file.length()
+        if (len == 59480L) {
+            return try {
+                val bytes = file.readBytes()
+                isPlaceholder(bytes)
+            } catch (e: Exception) {
+                true
+            }
+        }
+        if (len in 20000L..100000L) {
+            return try {
+                val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(file.absolutePath, opts)
+                opts.outWidth == 600 && opts.outHeight == 642
+            } catch (e: Exception) {
+                false
+            }
+        }
+        return false
+    }
+
+    fun isPlaceholder(bytes: ByteArray): Boolean {
+        if (bytes.size == 59480) {
+            val md5 = Hash.md5(bytes)
+            if (md5.equals(MANGADEX_PLACEHOLDER_MD5, ignoreCase = true)) {
+                return true
+            }
+        }
+        if (bytes.size in 20000..100000) {
+            return try {
+                val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                opts.outWidth == 600 && opts.outHeight == 642
+            } catch (e: Exception) {
+                false
+            }
+        }
+        return false
+    }
 
     fun isImage(bytes: ByteArray): Boolean {
         if (bytes.size < 4) return false
@@ -57,20 +103,18 @@ object OnlineCoverFetcher {
         val networkHelper: NetworkHelper = Injekt.get()
         val client = networkHelper.client
         try {
-            val req = Request.Builder()
+            val reqBuilder = Request.Builder()
                 .url(url)
                 .header("User-Agent", USER_AGENT)
-                .build()
+            if (url.contains("mangadex.org")) {
+                reqBuilder.header("Referer", "https://mangadex.org/")
+            }
+            val req = reqBuilder.build()
             val resp = client.newCall(req).execute()
             if (resp.isSuccessful) {
-                val body = resp.body
-                if (body != null) {
-                    val bytes = body.bytes()
-                    if (isImage(bytes)) {
-                        ByteArrayInputStream(bytes)
-                    } else {
-                        null
-                    }
+                val bytes = resp.body.bytes()
+                if (isImage(bytes) && !isPlaceholder(bytes)) {
+                    ByteArrayInputStream(bytes)
                 } else {
                     null
                 }
@@ -114,7 +158,19 @@ object OnlineCoverFetcher {
                 fetched.addAll(anilistDeferred.await())
                 fetched.addAll(kitsuDeferred.await())
                 fetched.addAll(mangaDexDeferred.await())
-                results.addAll(fetched.sortedByDescending { scoreTitleMatch(title, it.description) })
+                results.addAll(
+                    fetched.sortedWith(
+                        compareByDescending<AvailableCover> { scoreTitleMatch(title, it.description) }
+                            .thenByDescending {
+                                when (it.source) {
+                                    "AniList" -> 3
+                                    "Kitsu" -> 2
+                                    "MangaDex" -> 1
+                                    else -> 0
+                                }
+                            },
+                    ),
+                )
             }
         }
 
@@ -352,7 +408,17 @@ object OnlineCoverFetcher {
 
         // Tenta primeiro obter capa dos provedores oficiais online (AniList, Kitsu, MangaDex)
         val sortedCovers = onlineCovers.distinctBy { it.url }
-            .sortedByDescending { scoreTitleMatch(title, it.description) }
+            .sortedWith(
+                compareByDescending<AvailableCover> { scoreTitleMatch(title, it.description) }
+                    .thenByDescending {
+                        when (it.source) {
+                            "AniList" -> 3
+                            "Kitsu" -> 2
+                            "MangaDex" -> 1
+                            else -> 0
+                        }
+                    },
+            )
         for (cover in sortedCovers) {
             val stream = fetchStreamFromUrl(cover.url)
             if (stream != null) {
